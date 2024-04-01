@@ -93,17 +93,30 @@ void binC7Opt(char src[N], char dst[N], const char lowBound, const char upBound,
     char8 outVals=(outVal<<24)+(outVal<<16)+(outVal<<8)+outVal;
     outVals=(outVals<<32)+outVals;
 
+    uchar64 lowBounds2;
+    uchar64 upBounds2;
+    char64 inVals2;
+    char64 outVals2;
+
+    for(int i=0;i<64;i++){
+        lowBounds2.s[i]=lowBound;
+        upBounds2.s[i]=lowBound;
+        inVals2.s[i]=inVal;
+        outVals2.s[i]=outVal;
+    }
+
     unsigned long long startTsc[N],currentTsc[N];
 
-    int i=0;
-    while(i<N){
+    uchar8* srcPtr= reinterpret_cast<uchar8*>(src);
+    char8* dstPtr= reinterpret_cast<char8*>(dst);
+
+    for(int i=0;i<N;i+=8){
         //startTsc[i]=__TSC;
 
-        uchar8 val=*reinterpret_cast<uchar8*>(&src[i]);
-        //printf("val:%lx\n",val);
+        uchar8 val=*srcPtr;
 
-        bool8 loOk=__cmp_gt_bool(val,lowBounds);
-        bool8 hiOk=__cmp_gt_bool(upBounds,val);
+        bool8 loOk=__cmp_gt_bool(val, lowBounds);
+        bool8 hiOk=__cmp_gt_bool(upBounds, val);
 
         bool8 inOrNot=__and(loOk, hiOk);
         char8 valid=__expand(inOrNot);
@@ -111,32 +124,30 @@ void binC7Opt(char src[N], char dst[N], const char lowBound, const char upBound,
 
         char8 ins=valid & inVals;
         char8 outs=invalid & outVals;
-        *reinterpret_cast<char8*>(&dst[i]) = ins | outs;
+        *dstPtr= ins | outs;
 
         //currentTsc[i]=__TSC;
 
-        i+=8;
+        srcPtr++;
+        dstPtr++;
 
         /*
-        printf("val:%lx\n",val);
-        printf("loOk:%lx\n",loOk);
-        //printf("loOk:%lx\n",(loOk>>32));
-        printf("hiOk:%lx\n",hiOk);
-        //printf("hiOk:%lx\n",(hiOk>>32));
-        printf("inOrNot:%lx\n",inOrNot);
-        //printf("inOrNot:%lx\n",(inOrNot>>32));
-        printf("valid:%lx\n",valid);
-        printf("inalid:%lx\n",invalid);
-        printf("ins:%lx\n",ins);
-        printf("outs:%lx\n",outs);
-        printf("res:%lx\n",(ins|outs));
+        printf("val:%llx\n",val);
+        printf("loOk:%llx\n",loOk);
+        printf("hiOk:%llx\n",hiOk);
+        printf("inOrNot:%llx\n",inOrNot);
+        printf("valid:%llx\n",valid);
+        printf("inalid:%llx\n",invalid);
+        printf("ins:%llx\n",ins);
+        printf("outs:%llx\n",outs);
+        printf("res:%llx\n",(ins|outs));
         */
 
     }
 
-    /*for(i=0;i<N;i+=8){
+    for(int i=0;i<N;i+=8){
         printf("%lld cycle\n", currentTsc[i]-startTsc[i]);
-    }*/
+    }
 }
 
 
