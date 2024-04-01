@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<?ccsproject version="1.0"?>
+<projectOptions>
+	<ccsVariant value="0:Eclipse-based"/>
+	<ccsVersion value="12.4.0"/>
+	<deviceVariant value="TMS320C71XX.J721E_DRA829_TDA4VM"/>
+	<deviceFamily value="C7000"/>
+	<deviceEndianness value="little"/>
+	<codegenToolVersion value="3.1.0.LTS"/>
+	<isElfFormat value="true"/>
+	<connection value="common/targetdb/connections/TIXDS110_Connection.xml"/>
+	<linkerCommandFile value="linker_c7x_freertos.cmd"/>
+	<rts value="libc.a"/>
+	<createSlaveProjects value=""/>
+	<templateProperties value="id=com.ti.ccstudio.project.templates.helloWorld"/>
+	<filesToOpen value="hello.c"/>
+	<isTargetManual value="false"/>
+</projectOptions>
