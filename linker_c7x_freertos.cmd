@@ -73,8 +73,8 @@
 
 #define C7X_EXT_DATA_BASE   (C7X_ALLOCATED_START + 0x00100000)
 #define C7X_MEM_TEXT_BASE   (C7X_ALLOCATED_START + 0x00200000)
-#define C7X_MEM_DATA_BASE   (C7X_ALLOCATED_START + 0x00300000)
-#define C7X_DDR_SPACE_BASE  (C7X_ALLOCATED_START + 0x00400000)
+#define C7X_MEM_DATA_BASE   (C7X_ALLOCATED_START + 0x00700000)
+#define C7X_DDR_SPACE_BASE  (C7X_ALLOCATED_START + 0x00800000)
 
 MEMORY
 {
@@ -82,9 +82,9 @@ MEMORY
     DDR0_RESERVED: org = 0x80000000,          len = 0x20000000   /* 512MB Reserved for A72 OS */
     C7X_IPC_D:     org = C7X_ALLOCATED_START, len = 0x00100000   /*  1MB DDR */
     C7X_EXT_D:     org = C7X_EXT_DATA_BASE,   len = 0x00100000   /*  1MB DDR */
-    C7X_TEXT:      org = C7X_MEM_TEXT_BASE,   len = 0x00100000   /*  1MB DDR */
+    C7X_TEXT:      org = C7X_MEM_TEXT_BASE,   len = 0x00500000   /*  1MB DDR */
     C7X_DATA:      org = C7X_MEM_DATA_BASE,   len = 0x00100000   /*  1MB DDR */
-    C7X_DDR_SPACE: org = C7X_DDR_SPACE_BASE,  len = 0x00C00000   /* 12MB DDR */
+    C7X_DDR_SPACE: org = C7X_DDR_SPACE_BASE,  len = 0x00800000   /* 12MB DDR */
 }
 
 SECTIONS
@@ -95,7 +95,7 @@ SECTIONS
     } load > C7X_TEXT ALIGN(0x200000)
     .vecs       >       C7X_DDR_SPACE ALIGN(0x400000)
     .secure_vecs    >   C7X_DDR_SPACE ALIGN(0x200000)
-    .text: _c_int00 > C7X_DDR_SPACE ALIGN(0x200000)
+    .text:_c_int00 > C7X_DDR_SPACE ALIGN(0x200000)
     .text       >       C7X_DDR_SPACE ALIGN(0x200000)
 
     .bss        >       C7X_DDR_SPACE  /* Zero-initialized data */
