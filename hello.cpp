@@ -235,16 +235,17 @@ void mmaTest2(){
 
     MMALIB_CNN_convolve_row_ixX_ixX_oxX_ExecOutArgs kerExecOutArgs;
 
+    int8_t* kernel = (int8_t*)malloc(9);
+    for(int i=0;i<9;i++){
+        kernel[i] = 1;
+        if(i%9==8 || i%9==0){
+            kernel[i] = 2;
+        }
+    }
+
     int8_t* dst = (int8_t*)malloc(16384);
     for(int i=0;i<16384;i++){
         dst[i]=0;
-    }
-
-    for(int i=0;i<147456;i++){
-        staticRefKernel_case13[i] = 1;
-        if(i%9==8){
-            staticRefKernel_case13[i] = 2;
-        }
     }
 
     for(int i=0;i<278528;i++){
@@ -257,14 +258,14 @@ void mmaTest2(){
     }
 
     MMALIB_STATUS execCheck = MMALIB_CNN_convolve_row_ixX_ixX_oxX_exec_checkParams(kernelHandle,
-                                                                                    staticRefKernel_case13,
+                                                                                   kernel,
                                                                                     staticRefIn_case13,
                                                                                     dst,
                                                                             &kerExecInArgs);
     printf("Exec check = %d.\n", execCheck);
 
     MMALIB_STATUS execStatus = MMALIB_CNN_convolve_row_ixX_ixX_oxX_exec(kernelHandle,
-                                                                        staticRefKernel_case13,
+                                                                        kernel,
                                                                         staticRefIn_case13,
                                                                         dst,
                                                                                 &kerExecInArgs,
