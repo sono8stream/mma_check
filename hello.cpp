@@ -124,13 +124,14 @@ void mmaTest2(){
     printf("%d",staticRefIn_case13[0]);
     printf("%d",staticRefOutput_case13[0]);
 
-    int numInChannels = 256;
+    int numInChannels = 1;
+    int numOutChannels = 1;
     int numGroupsPerKernel = 1;
 
     MMALIB_bufParams2D_t kernelBuffer;
-    int kDim = 2304;
+    int kDim = 3 * 3 * numInChannels;
     kernelBuffer.dim_x = kDim;
-    kernelBuffer.dim_y = 64 * numGroupsPerKernel;// numOfOutputChKerBuf * numGroupsPerKernel
+    kernelBuffer.dim_y = numOutChannels * numGroupsPerKernel;// numOfOutputChKerBuf * numGroupsPerKernel
     kernelBuffer.stride_y = 2624;// pitchA
     kernelBuffer.data_type = MMALIB_INT8;
 
@@ -144,7 +145,6 @@ void mmaTest2(){
     int kernelHeight = 3;
     int numBiasVals = kDim - kernelWidth*kernelHeight*numInChannels;// ç°âÒÇÕÉ[ÉçÅB
     int numBytes = 1;
-    int numOutChannels = 64;
 
     MMALIB_bufParams2D_t biasBuffer;
     biasBuffer.dim_x = numBiasVals;// numBiasVals
@@ -167,7 +167,7 @@ void mmaTest2(){
     int strideWidth = 1;
     int strideHeight = 1;
     int validColsIn = 772;
-    int subMChannels = 64;
+    int subMChannels = 1;
     int inWidth = 256;
     int pad = 1;
     int maxHeight = 256;
@@ -235,17 +235,22 @@ void mmaTest2(){
 
     MMALIB_CNN_convolve_row_ixX_ixX_oxX_ExecOutArgs kerExecOutArgs;
 
+    int8_t* dst = (int8_t*)malloc(16384);
+    for(int i=0;i<16384;i++){
+        dst[i]=0;
+    }
+
     MMALIB_STATUS execCheck = MMALIB_CNN_convolve_row_ixX_ixX_oxX_exec_checkParams(kernelHandle,
                                                                                     staticRefKernel_case13,
                                                                                     staticRefIn_case13,
-                                                                                    staticRefOutput_case13,
+                                                                                    dst,
                                                                             &kerExecInArgs);
     printf("Exec check = %d.\n", execCheck);
 
     MMALIB_STATUS execStatus = MMALIB_CNN_convolve_row_ixX_ixX_oxX_exec(kernelHandle,
                                                                         staticRefKernel_case13,
                                                                         staticRefIn_case13,
-                                                                        staticRefOutput_case13,
+                                                                        dst,
                                                                                 &kerExecInArgs,
                                                                                 &kerExecOutArgs);
     printf("Exec status = %d.\n", execStatus);
