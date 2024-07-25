@@ -187,7 +187,7 @@ void mmaTest2(){
     initArgs.maxHeight = maxHeight;
     initArgs.subMChannels = subMChannels;
     initArgs.numGroupsPerKernel = numGroupsPerKernel;
-    initArgs.shift = 14;
+    initArgs.shift = 0;
     initArgs.Fr = kernelWidth;
     initArgs.Fc = kernelHeight;
     initArgs.strideX = strideWidth;
@@ -238,6 +238,14 @@ void mmaTest2(){
     int8_t* dst = (int8_t*)malloc(16384);
     for(int i=0;i<16384;i++){
         dst[i]=0;
+    }
+
+    for(int i=0;i<147456;i++){
+        staticRefKernel_case13[i] = 1;
+    }
+
+    for(int i=0;i<278528;i++){
+        staticRefIn_case13[i] = 1;
     }
 
     MMALIB_STATUS execCheck = MMALIB_CNN_convolve_row_ixX_ixX_oxX_exec_checkParams(kernelHandle,
