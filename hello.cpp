@@ -132,13 +132,15 @@ void mmaTest2(){
     int kDim = 3 * 3 * numInChannels;
     kernelBuffer.dim_x = kDim;
     kernelBuffer.dim_y = numOutChannels * numGroupsPerKernel;// numOfOutputChKerBuf * numGroupsPerKernel
-    kernelBuffer.stride_y = 9;// pitchA
+    kernelBuffer.stride_y = kDim;// pitchA
     kernelBuffer.data_type = MMALIB_INT8;
 
+    int inChOffset = 772;
+
     MMALIB_bufParams2D_t srcBuffer;
-    srcBuffer.dim_x = 1088;// inChOffset
+    srcBuffer.dim_x = inChOffset;// inChOffset
     srcBuffer.dim_y = numInChannels * numGroupsPerKernel;// numInChannels*numGroupsPerKernel
-    srcBuffer.stride_y = 1088;// inChOffset
+    srcBuffer.stride_y = inChOffset;// inChOffset
     srcBuffer.data_type = MMALIB_INT8;
 
     int kernelWidth = 3;
@@ -171,7 +173,6 @@ void mmaTest2(){
     int inWidth = 256;
     int pad = 1;
     int maxHeight = 256;
-    int inChOffset = 1088;
 
     MMALIB_CNN_convolve_row_ixX_ixX_oxX_InitArgs initArgs;
     initArgs.funcStyle = MMALIB_FUNCTION_NATC;
@@ -194,7 +195,7 @@ void mmaTest2(){
     initArgs.strideY = strideHeight;
     initArgs.dilationX = dilationWidth;
     initArgs.dilationY = dilationHeight;
-    initArgs.bias = 20;
+    initArgs.bias = 0;
     initArgs.activationType = MMALIB_RELU;
     initArgs.mode = MMALIB_LINEAR;
     initArgs.weightReorderFlag = 0;
