@@ -243,33 +243,36 @@ void mmaTest2(){
         }
     }
 
+    const int inSize = 257 * 3 + 1;
+    int8_t* src = (int8_t*)malloc(inSize);// paddingを考慮に入れてサイズを確保する
+
+    for(int i=0;i<inSize;i++){
+        if(i % 257 == 0){
+            src[i] = i/257;
+        }
+        else{
+            src[i] = 1;
+        }
+    }
+
     int8_t* dst = (int8_t*)malloc(256);
     for(int i=0;i<256;i++){
         dst[i]=0;
     }
 
-    for(int i=0;i<278528;i++){
-        if(i == 0 || i>=771){
-            staticRefIn_case13[i] = 0;
-        }
-        else{
-            staticRefIn_case13[i] = 1;
-        }
-    }
-
     MMALIB_STATUS execCheck = MMALIB_CNN_convolve_row_ixX_ixX_oxX_exec_checkParams(kernelHandle,
                                                                                    kernel,
-                                                                                    staticRefIn_case13,
-                                                                                    dst,
+                                                                                   src,
+                                                                                   dst,
                                                                             &kerExecInArgs);
     printf("Exec check = %d.\n", execCheck);
 
     MMALIB_STATUS execStatus = MMALIB_CNN_convolve_row_ixX_ixX_oxX_exec(kernelHandle,
                                                                         kernel,
-                                                                        staticRefIn_case13,
+                                                                        src,
                                                                         dst,
-                                                                                &kerExecInArgs,
-                                                                                &kerExecOutArgs);
+                                                                        &kerExecInArgs,
+                                                                        &kerExecOutArgs);
     printf("Exec status = %d.\n", execStatus);
 
     printf("MatMulIntrinsics done...\n");
