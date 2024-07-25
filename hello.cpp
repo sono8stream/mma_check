@@ -154,7 +154,7 @@ void mmaTest2(){
     biasBuffer.stride_y = numBiasVals * numBytes;// 今回はゼロ。
     biasBuffer.data_type = MMALIB_INT8;// カーネルと同じデータ型。
 
-    int pitchC = 576;
+    int pitchC = 576;// validColsOut(256) * 2 + align
 
     MMALIB_bufParams3D_t dstBuffer;
     dstBuffer.dim_x = pitchC / 1;// pitchC/numBytes
