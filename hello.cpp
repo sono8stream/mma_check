@@ -132,7 +132,7 @@ void mmaTest2(){
     int kDim = 3 * 3 * numInChannels;
     kernelBuffer.dim_x = kDim;
     kernelBuffer.dim_y = numOutChannels * numGroupsPerKernel;// numOfOutputChKerBuf * numGroupsPerKernel
-    kernelBuffer.stride_y = 2624;// pitchA
+    kernelBuffer.stride_y = 9;// pitchA
     kernelBuffer.data_type = MMALIB_INT8;
 
     MMALIB_bufParams2D_t srcBuffer;
@@ -242,10 +242,18 @@ void mmaTest2(){
 
     for(int i=0;i<147456;i++){
         staticRefKernel_case13[i] = 1;
+        if(i%9==8){
+            staticRefKernel_case13[i] = 2;
+        }
     }
 
     for(int i=0;i<278528;i++){
-        staticRefIn_case13[i] = 1;
+        if(i == 0 || i>=771){
+            staticRefIn_case13[i] = 0;
+        }
+        else{
+            staticRefIn_case13[i] = 1;
+        }
     }
 
     MMALIB_STATUS execCheck = MMALIB_CNN_convolve_row_ixX_ixX_oxX_exec_checkParams(kernelHandle,
