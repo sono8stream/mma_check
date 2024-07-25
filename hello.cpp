@@ -18,43 +18,6 @@ const int Width = 40;
 //#define IMG_STRIDE (IMG_WIDTH)
 //#define NUM_CH     (3)
 
-void seTestTranspose(){
-
-    /*
-    int img_buffer[NUM_CH * IMG_STRIDE * IMG_HEIGHT];
-
-    //Initialize image buffer
-    for(int ch = 0; ch < NUM_CH; ch++) {
-
-        //Update channel pointer
-        int *pIn = (int *)&img_buffer[(ch * (IMG_STRIDE * IMG_HEIGHT))];
-
-        //Reset value for every channel
-        int val = 0;
-
-        for(int row = 0; row < IMG_HEIGHT; row++) {
-            for(int col = 0; col < IMG_WIDTH; col++) {
-                pIn[(row * IMG_STRIDE) + col] = val++;
-            }
-        }
-    }
-
-    for(int ch = 0; ch < NUM_CH; ch++) {
-
-        //Update channel pointer
-        int *pIn = (int *)&img_buffer[(ch * (IMG_STRIDE * IMG_HEIGHT))];
-        printf("Ch = %d \n", ch);
-        for(int row = 0; row < IMG_HEIGHT; row++) {
-            for(int col = 0; col < IMG_WIDTH; col++) {
-                printf("%3d, ", pIn[(row * IMG_STRIDE) + col]);
-            }
-            printf("\n");
-        }
-        printf("\n");
-    }
-    */
-}
-
 void mmaTest(){
     const size_t rows = 3;
     const size_t cols = 3;
@@ -258,6 +221,34 @@ void mmaTest2(){
                                                                         &dstBuffer,
                                                                         &initArgs);
     printf("Init status = %d.\n", initStatus);
+
+    int validColsInLast = 772;
+    int validColsPerRowInLast = 0;
+    int validRowsInLast = 0;
+
+    MMALIB_CNN_convolve_row_ixX_ixX_oxX_ExecInArgs kerExecInArgs;
+    kerExecInArgs.subMChannels = subMChannels;
+    kerExecInArgs.validColsIn       = validColsInLast;
+    kerExecInArgs.validColsPerRowIn = validColsPerRowInLast;
+    kerExecInArgs.validRowsIn       = validRowsInLast;
+    kerExecInArgs.pad               = pad;
+
+    MMALIB_CNN_convolve_row_ixX_ixX_oxX_ExecOutArgs kerExecOutArgs;
+
+    MMALIB_STATUS execCheck = MMALIB_CNN_convolve_row_ixX_ixX_oxX_exec_checkParams(kernelHandle,
+                                                                                    staticRefKernel_case13,
+                                                                                    staticRefIn_case13,
+                                                                                    staticRefOutput_case13,
+                                                                            &kerExecInArgs);
+    printf("Exec check = %d.\n", execCheck);
+
+    MMALIB_STATUS execStatus = MMALIB_CNN_convolve_row_ixX_ixX_oxX_exec(kernelHandle,
+                                                                        staticRefKernel_case13,
+                                                                        staticRefIn_case13,
+                                                                        staticRefOutput_case13,
+                                                                                &kerExecInArgs,
+                                                                                &kerExecOutArgs);
+    printf("Exec status = %d.\n", execStatus);
 
     printf("MatMulIntrinsics done...\n");
     free(kernelHandle);
