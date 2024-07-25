@@ -243,8 +243,8 @@ void mmaTest2(){
         }
     }
 
-    int8_t* dst = (int8_t*)malloc(16384);
-    for(int i=0;i<16384;i++){
+    int8_t* dst = (int8_t*)malloc(256);
+    for(int i=0;i<256;i++){
         dst[i]=0;
     }
 
