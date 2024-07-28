@@ -2,6 +2,8 @@
 #include <c7x.h>
 #include <mmalib.h>
 #include "tester.h"
+#include "tester2.h"
+#include <stdint.h>
 //#include <c7x_scalable.h>
 //#include <stdlib.h>
 //#include <iostream>
@@ -123,6 +125,265 @@ void mmaTest2(){
     printf("%d",staticRefKernel_case13[0]);
     printf("%d",staticRefIn_case13[0]);
     printf("%d",staticRefOutput_case13[0]);
+
+    int numInChannels = 1;
+    int numOutChannels = 1;
+    int numGroupsPerKernel = 1;
+
+    MMALIB_bufParams2D_t kernelBuffer;
+    int kDim = 3 * 3 * numInChannels;
+    kernelBuffer.dim_x = kDim;
+    kernelBuffer.dim_y = numOutChannels * numGroupsPerKernel;// numOfOutputChKerBuf * numGroupsPerKernel
+    kernelBuffer.stride_y = kDim;// pitchA
+    kernelBuffer.data_type = MMALIB_INT8;
+
+    int inChOffset = 772;
+
+    MMALIB_bufParams2D_t srcBuffer;
+    srcBuffer.dim_x = inChOffset;// inChOffset
+    srcBuffer.dim_y = numInChannels * numGroupsPerKernel;// numInChannels*numGroupsPerKernel
+    srcBuffer.stride_y = inChOffset;// inChOffset
+    srcBuffer.data_type = MMALIB_INT8;
+
+    int kernelWidth = 3;
+    int kernelHeight = 3;
+    int numBiasVals = kDim - kernelWidth*kernelHeight*numInChannels;// 今回はゼロ。
+    int numBytes = 1;
+
+    MMALIB_bufParams2D_t biasBuffer;
+    biasBuffer.dim_x = numBiasVals;// numBiasVals
+    biasBuffer.dim_y = numOutChannels;// numOutChannels
+    biasBuffer.stride_y = numBiasVals * numBytes;// 今回はゼロ。
+    biasBuffer.data_type = MMALIB_INT8;// カーネルと同じデータ型。
+
+    int pitchC = 576;// validColsOut(256) * 2 + align
+
+    MMALIB_bufParams3D_t dstBuffer;
+    dstBuffer.dim_x = pitchC / 1;// pitchC/numBytes
+    dstBuffer.dim_y = numOutChannels;// numOutChannels
+    dstBuffer.stride_y = pitchC;
+    dstBuffer.dim_z = numGroupsPerKernel;// numGroupsPerKernel
+    dstBuffer.stride_z = numOutChannels * pitchC;// numOutChannels*pitchC
+    dstBuffer.data_type = MMALIB_UINT8;
+
+    int dilationWidth = 1;
+    int dilationHeight = 1;
+    int strideWidth = 1;
+    int strideHeight = 1;
+    int validColsIn = 772;
+    int subMChannels = 1;
+    int inWidth = 256;
+    int pad = 1;
+    int maxHeight = 256;
+
+    MMALIB_CNN_convolve_row_ixX_ixX_oxX_InitArgs initArgs;
+    initArgs.funcStyle = MMALIB_FUNCTION_NATC;
+    initArgs.No = numOutChannels;
+    initArgs.inChOffset = inChOffset;
+    initArgs.validColsIn = validColsIn;
+    initArgs.validColsPerRowIn = 0;
+    initArgs.validRowsIn = 0;
+    initArgs.inputPitchPerRow = 0;
+    initArgs.outputPitchPerRow = 0;
+    initArgs.inWidth = inWidth;
+    initArgs.pad = 1;
+    initArgs.maxHeight = maxHeight;
+    initArgs.subMChannels = subMChannels;
+    initArgs.numGroupsPerKernel = numGroupsPerKernel;
+    initArgs.shift = 0;
+    initArgs.Fr = kernelWidth;
+    initArgs.Fc = kernelHeight;
+    initArgs.strideX = strideWidth;
+    initArgs.strideY = strideHeight;
+    initArgs.dilationX = dilationWidth;
+    initArgs.dilationY = dilationHeight;
+    initArgs.bias = 0;
+    initArgs.activationType = MMALIB_RELU;
+    initArgs.mode = MMALIB_LINEAR;
+    initArgs.weightReorderFlag = 0;
+    initArgs.numBiasVals = numBiasVals;
+
+
+
+    int32_t handleSize = MMALIB_CNN_convolve_row_ixX_ixX_oxX_getHandleSize(&initArgs);
+    MMALIB_kernelHandle kernelHandle = malloc(handleSize);
+
+    // Check that the parameters will generate a valid handle
+    MMALIB_STATUS initCheck = MMALIB_CNN_convolve_row_ixX_ixX_oxX_init_checkParams(kernelHandle,
+        &kernelBuffer,
+        &srcBuffer,
+        &dstBuffer,
+        &initArgs);
+
+    printf("Init check = %d.\n", initCheck);
+
+    // Generate the handle
+    MMALIB_STATUS initStatus = MMALIB_CNN_convolve_row_ixX_ixX_oxX_init(kernelHandle,
+                                                                        &kernelBuffer,
+                                                                        &srcBuffer,
+                                                                        &dstBuffer,
+                                                                        &initArgs);
+    printf("Init status = %d.\n", initStatus);
+
+    int validColsInLast = 772;
+    int validColsPerRowInLast = 0;
+    int validRowsInLast = 0;
+
+    MMALIB_CNN_convolve_row_ixX_ixX_oxX_ExecInArgs kerExecInArgs;
+    kerExecInArgs.subMChannels = subMChannels;
+    kerExecInArgs.validColsIn       = validColsInLast;
+    kerExecInArgs.validColsPerRowIn = validColsPerRowInLast;
+    kerExecInArgs.validRowsIn       = validRowsInLast;
+    kerExecInArgs.pad               = pad;
+
+    MMALIB_CNN_convolve_row_ixX_ixX_oxX_ExecOutArgs kerExecOutArgs;
+
+    int8_t* kernel = (int8_t*)malloc(9);
+    for(int i=0;i<9;i++){
+        kernel[i] = 1;
+        if(i%9==8 || i%9==0){
+            kernel[i] = 2;
+        }
+    }
+
+    const int inSize = 257 * 3 + 1;
+    int8_t* src = (int8_t*)malloc(inSize);// paddingを考慮に入れてサイズを確保する
+
+    for(int i=0;i<inSize;i++){
+        if(i % 257 == 0){
+            src[i] = i/257;
+        }
+        else{
+            src[i] = 1;
+        }
+    }
+
+    int8_t* dst = (int8_t*)malloc(256);
+    for(int i=0;i<256;i++){
+        dst[i]=0;
+    }
+
+    MMALIB_STATUS execCheck = MMALIB_CNN_convolve_row_ixX_ixX_oxX_exec_checkParams(kernelHandle,
+                                                                                   kernel,
+                                                                                   src,
+                                                                                   dst,
+                                                                            &kerExecInArgs);
+    printf("Exec check = %d.\n", execCheck);
+
+    MMALIB_STATUS execStatus = MMALIB_CNN_convolve_row_ixX_ixX_oxX_exec(kernelHandle,
+                                                                        kernel,
+                                                                        src,
+                                                                        dst,
+                                                                        &kerExecInArgs,
+                                                                        &kerExecOutArgs);
+    printf("Exec status = %d.\n", execStatus);
+
+    printf("MatMulIntrinsics done...\n");
+    free(kernelHandle);
+}
+
+typedef struct {
+   uint8_t testPattern; /* 0: constant, 1: sequential, 2: random, 3: static
+                           array, 4: file, etc */
+   void *  staticIn8Bit;
+   void *  staticKernel8Bit;
+   void *  staticOutMMALIB8Bit;
+   void *  staticOut8Bit;
+   void *  staticIn16Bit;
+   void *  staticKernel16Bit;
+   void *  staticOutMMALIB16Bit;
+   void *  staticOut16Bit;
+   int32_t kernelWidth;
+   int32_t kernelHeight;
+   int32_t strideWidth;
+   int32_t strideHeight;
+   int32_t dilationHeight;
+   int32_t dilationWidth;
+   int32_t inWidth;
+   int32_t pad;
+   int32_t maxHeight;
+   int32_t inChOffset;
+   int32_t validColsIn;
+   int32_t kDim;
+   int32_t pitchA;
+   int32_t numOfOutputChKerBuf;
+   int32_t pitchC;
+   int32_t subMChannels;
+   int32_t numInChannels;
+   int32_t numOutChannels;
+   int32_t numGroups;
+   uint8_t qShift;
+   int32_t biasB;
+   int8_t  activationType;
+   uint8_t dataTypeA;
+   uint8_t dataTypeB;
+   uint8_t dataTypeC;
+   uint8_t mode;
+   int32_t circularOffset;
+   int32_t totalN;
+   int32_t subN;
+   int32_t validColsPerRowIn;
+   int32_t validRowsIn;
+   int32_t outputPitchPerRow;
+   int32_t inputPitchPerRow;
+   int32_t outputDataLocation; // 0 -> L2SRAM, 1-> MSMC
+   bool    preProcessFlag;
+   int32_t testID;
+} deconvolve_row_ixX_ixX_oxX_testParams_t;
+
+void mmaDeconv(){
+    printf("%d",staticRefInputHCaseCase3_i8s_i8s_o8s[0]);
+    printf("%d",staticRefInputXCaseCase3_i8s_i8s_o8s[0]);
+    printf("%d",staticRefOutputYMMALIBCaseCase3_i8s_i8s_o8s[0]);
+    printf("%d",staticRefOutputYCaseCase3_i8s_i8s_o8s[0]);
+
+    deconvolve_row_ixX_ixX_oxX_testParams_t param={
+       3, // testPattern
+       staticRefInputXCaseCase3_i8s_i8s_o8s,
+       staticRefInputHCaseCase3_i8s_i8s_o8s,
+       staticRefOutputYMMALIBCaseCase3_i8s_i8s_o8s,
+       staticRefOutputYCaseCase3_i8s_i8s_o8s,
+       NULL,
+       NULL,
+       NULL,
+       NULL,
+       4,                 // kernelWidth
+       4,                 // kernelHeight
+       2,                 // strideWidth
+       2,                 // strideHeight
+       1,                 // dilationHeight
+       1,                 // dilationWidth
+       68,                // inWidth
+       1,                 // pad
+       8,                 // maxHeight
+       448,               // inChoffset
+       414,               // validColsIn
+       9,                 // kDim
+       320,               // pitchA
+       1,                 // numOfOutputChKerBuf
+       1768,              // pitchC
+       1,                 // subMChannels
+       1,                 // numInChannels
+       1,                 // numOutChannels
+       1,                 // numGroups
+       9,                 // qShift
+       12,                // biasB
+       MMALIB_SATURATION, // activationType
+       MMALIB_INT8,       // dataTypeA
+       MMALIB_INT8,       // dataTypeB
+       MMALIB_INT8,       // dataTypeC
+       0,                 // mode
+       0,                 // circularOffset
+       1,                 // totalN
+       1,                 // subN
+       0,                 // validColsPerRowIn
+       0,                 // ValidRowsIn
+       0,                 // outputPitchPerRow
+       0,                 // inputPitchPerRow
+       MMALIB_TEST_OUTPUT_MSMC,
+       0, // preProcessFlag
+       3,
+    };
 
     int numInChannels = 1;
     int numOutChannels = 1;
