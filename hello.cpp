@@ -354,7 +354,7 @@ void mmaDeconv(){
        8,                 // maxHeight
        448,               // inChoffset
        414,               // validColsIn
-       9,                 // kDim
+       16,                 // kDim
        320,               // pitchA
        1,                 // numOfOutputChKerBuf
        1768,              // pitchC
@@ -362,8 +362,8 @@ void mmaDeconv(){
        1,                 // numInChannels
        1,                 // numOutChannels
        1,                 // numGroups
-       9,                 // qShift
-       12,                // biasB
+       0,                 // qShift
+       0,                // biasB
        MMALIB_SATURATION, // activationType
        MMALIB_INT8,       // dataTypeA
        MMALIB_INT8,       // dataTypeB
@@ -424,6 +424,7 @@ void mmaDeconv(){
     kerInitArgs.validRowsIn       = param.validRowsIn;
     kerInitArgs.outputPitchPerRow = param.outputPitchPerRow;
     kerInitArgs.inputPitchPerRow  = param.inputPitchPerRow;
+    kerInitArgs.funcStyle         = MMALIB_FUNCTION_NATC;
 
     int32_t handleSize = MMALIB_CNN_deconvolve_row_ixX_ixX_oxX_getHandleSize(&kerInitArgs);
     MMALIB_kernelHandle kernelHandle = malloc(handleSize);
@@ -446,12 +447,23 @@ void mmaDeconv(){
     printf("Init status = %d.\n", initStatus);
 
     // 計算用のカーネルを得る
+    const int kernelBaseSize = 64;
+    int8_t* kernelBase = (int8_t*)malloc(kernelBaseSize);// paddingを考慮に入れてサイズを確保する
+    for(int i=0;i<kernelBaseSize;i++){
+        if(i/16==0){
+            kernelBase[i] = 1;
+        }
+        else{
+            kernelBase[i] = 0;
+        }
+    }
+
     int kernelSize = (numOfOutputChKerBuf * param.pitchA) * param.numGroups;
     int8_t* kernel = (int8_t*)malloc(kernelSize);
     MMALIB_CNN_deconvolve_row_4x4Stride2PreProcessParameters (
             param.kDim, param.numInChannels, param.pitchA,
             param.numOutChannels, // before pre-processing
-            param.numGroups, MMALIB_MMA_SIZE_8_BIT, param.staticKernel8Bit,
+            param.numGroups, MMALIB_MMA_SIZE_8_BIT, kernelBase,
             kernel);
 
     MMALIB_CNN_deconvolve_row_ixX_ixX_oxX_ExecInArgs kerExecInArgs;
@@ -460,34 +472,32 @@ void mmaDeconv(){
 
     MMALIB_CNN_deconvolve_row_ixX_ixX_oxX_ExecOutArgs kerExecOutArgs;
 
-    const int inSize = 257 * 3 + 1;
+    const int inSize = 448;
     int8_t* src = (int8_t*)malloc(inSize);// paddingを考慮に入れてサイズを確保する
-
     for(int i=0;i<inSize;i++){
-        if(i % 257 == 0){
-            src[i] = i/257;
-        }
-        else{
-            src[i] = 1;
+        if(i==0){
+            src[i]=0;
+        }else{
+            src[i]=2;
         }
     }
 
-    int8_t* dst = (int8_t*)malloc(256);
-    for(int i=0;i<256;i++){
+    int8_t* dst = (int8_t*)malloc(1376);
+    for(int i=0;i<1376;i++){
         dst[i]=0;
     }
 
     MMALIB_STATUS execCheck = MMALIB_CNN_deconvolve_row_ixX_ixX_oxX_exec_checkParams(kernelHandle,
                                                                                    kernel,
-                                                                                   param.staticIn8Bit,
-                                                                                   param.staticOutMMALIB8Bit,
+                                                                                   src,
+                                                                                   dst,
                                                                             &kerExecInArgs);
     printf("Exec check = %d.\n", execCheck);
 
     MMALIB_STATUS execStatus = MMALIB_CNN_deconvolve_row_ixX_ixX_oxX_exec(kernelHandle,
                                                                           kernel,
-                                                                        param.staticIn8Bit,
-                                                                        param.staticOutMMALIB8Bit,
+                                                                          src,
+                                                                        dst,
                                                                         &kerExecInArgs,
                                                                         &kerExecOutArgs);
     printf("Exec status = %d.\n", execStatus);
