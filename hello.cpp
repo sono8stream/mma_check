@@ -445,19 +445,20 @@ void mmaDeconv(){
                                                                         &kerInitArgs);
     printf("Init status = %d.\n", initStatus);
 
+    // 計算用のカーネルを得る
+    int kernelSize = (numOfOutputChKerBuf * param.pitchA) * param.numGroups;
+    int8_t* kernel = (int8_t*)malloc(kernelSize);
+    MMALIB_CNN_deconvolve_row_4x4Stride2PreProcessParameters (
+            param.kDim, param.numInChannels, param.pitchA,
+            param.numOutChannels, // before pre-processing
+            param.numGroups, MMALIB_MMA_SIZE_8_BIT, param.staticKernel8Bit,
+            kernel);
+
     MMALIB_CNN_deconvolve_row_ixX_ixX_oxX_ExecInArgs kerExecInArgs;
     kerExecInArgs.subMChannels = param.subMChannels;
     kerExecInArgs.validColsIn       = param.validColsIn;
 
     MMALIB_CNN_deconvolve_row_ixX_ixX_oxX_ExecOutArgs kerExecOutArgs;
-
-    int8_t* kernel = (int8_t*)malloc(9);
-    for(int i=0;i<9;i++){
-        kernel[i] = 1;
-        if(i%9==8 || i%9==0){
-            kernel[i] = 2;
-        }
-    }
 
     const int inSize = 257 * 3 + 1;
     int8_t* src = (int8_t*)malloc(inSize);// paddingを考慮に入れてサイズを確保する
@@ -477,14 +478,14 @@ void mmaDeconv(){
     }
 
     MMALIB_STATUS execCheck = MMALIB_CNN_deconvolve_row_ixX_ixX_oxX_exec_checkParams(kernelHandle,
-                                                                                   param.staticKernel8Bit,
+                                                                                   kernel,
                                                                                    param.staticIn8Bit,
                                                                                    param.staticOutMMALIB8Bit,
                                                                             &kerExecInArgs);
     printf("Exec check = %d.\n", execCheck);
 
     MMALIB_STATUS execStatus = MMALIB_CNN_deconvolve_row_ixX_ixX_oxX_exec(kernelHandle,
-                                                                        param.staticKernel8Bit,
+                                                                          kernel,
                                                                         param.staticIn8Bit,
                                                                         param.staticOutMMALIB8Bit,
                                                                         &kerExecInArgs,
