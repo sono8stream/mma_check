@@ -332,10 +332,6 @@ typedef struct {
 } deconvolve_row_ixX_ixX_oxX_testParams_t;
 
 void mmaDeconv(){
-    printf("%d",staticRefInputHCaseCase3_i8s_i8s_o8s[0]);
-    printf("%d",staticRefInputXCaseCase3_i8s_i8s_o8s[0]);
-    printf("%d",staticRefOutputYMMALIBCaseCase3_i8s_i8s_o8s[0]);
-    printf("%d",staticRefOutputYCaseCase3_i8s_i8s_o8s[0]);
 
     deconvolve_row_ixX_ixX_oxX_testParams_t param={
        3, // testPattern
@@ -385,9 +381,11 @@ void mmaDeconv(){
        3,
     };
 
+    int numOfOutputChKerBuf = param.numOfOutputChKerBuf * 4;// 出力サイズは4倍のサイズになるはず。
+
     MMALIB_bufParams2D_t kernelBuffer;
     kernelBuffer.dim_x = param.kDim;
-    kernelBuffer.dim_y = param.numOfOutputChKerBuf * param.numGroups;
+    kernelBuffer.dim_y =  numOfOutputChKerBuf * param.numGroups;
     kernelBuffer.stride_y = param.pitchA;
     kernelBuffer.data_type = param.dataTypeA;
 
@@ -426,8 +424,6 @@ void mmaDeconv(){
     kerInitArgs.validRowsIn       = param.validRowsIn;
     kerInitArgs.outputPitchPerRow = param.outputPitchPerRow;
     kerInitArgs.inputPitchPerRow  = param.inputPitchPerRow;
-
-
 
     int32_t handleSize = MMALIB_CNN_deconvolve_row_ixX_ixX_oxX_getHandleSize(&kerInitArgs);
     MMALIB_kernelHandle kernelHandle = malloc(handleSize);
