@@ -61,7 +61,7 @@
  */
 
 --ram_model
--heap  0x20000
+-heap  0x30000
 -stack 0x20000
 --args 0x1000
 --diag_suppress=10068 /* "no matching section" */

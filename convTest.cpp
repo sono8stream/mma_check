@@ -20,13 +20,13 @@ void mmaConv(){
     kernelBuffer.stride_y = kDim;// pitchA
     kernelBuffer.data_type = MMALIB_INT8;
 
-    int inChOffset = 772;
+    int inSize = 66048;
 
     MMALIB_bufParams2D_t srcBuffer;
-    srcBuffer.dim_x = inChOffset;// inChOffset
+    srcBuffer.dim_x = inSize;// inChOffset
     srcBuffer.dim_y = numInChannels * numGroupsPerKernel;// numInChannels*numGroupsPerKernel
-    srcBuffer.stride_y = inChOffset;// inChOffset
-    srcBuffer.data_type = MMALIB_INT8;
+    srcBuffer.stride_y = inSize;// inChOffset
+    srcBuffer.data_type = MMALIB_UINT8;
 
     int kernelWidth = 3;
     int kernelHeight = 3;
@@ -39,30 +39,30 @@ void mmaConv(){
     biasBuffer.stride_y = numBiasVals * numBytes;// 今回はゼロ。
     biasBuffer.data_type = MMALIB_INT8;// カーネルと同じデータ型。
 
-    int pitchC = 576;// validColsOut(256) * 2 + align
+    int outSize = 63980;//63488;// validColsOut(256) * 2 + align
 
     MMALIB_bufParams3D_t dstBuffer;
-    dstBuffer.dim_x = pitchC / 1;// pitchC/numBytes
+    dstBuffer.dim_x = outSize;// pitchC/numBytes
     dstBuffer.dim_y = numOutChannels;// numOutChannels
-    dstBuffer.stride_y = pitchC;
+    dstBuffer.stride_y = outSize;
     dstBuffer.dim_z = numGroupsPerKernel;// numGroupsPerKernel
-    dstBuffer.stride_z = numOutChannels * pitchC;// numOutChannels*pitchC
+    dstBuffer.stride_z = numOutChannels * outSize;// numOutChannels*pitchC
     dstBuffer.data_type = MMALIB_UINT8;
 
     int dilationWidth = 1;
     int dilationHeight = 1;
     int strideWidth = 1;
     int strideHeight = 1;
-    int validColsIn = 772;
+    int validColsIn = inSize;
     int subMChannels = 1;
-    int inWidth = 256;
-    int pad = 1;
+    int inWidth = 1032;
+    int pad = 0;
     int maxHeight = 256;
 
     MMALIB_CNN_convolve_row_ixX_ixX_oxX_InitArgs initArgs;
     initArgs.funcStyle = MMALIB_FUNCTION_NATC;
     initArgs.No = numOutChannels;
-    initArgs.inChOffset = inChOffset;
+    initArgs.inChOffset = inSize;
     initArgs.validColsIn = validColsIn;
     initArgs.validColsPerRowIn = 0;
     initArgs.validRowsIn = 0;
@@ -73,7 +73,7 @@ void mmaConv(){
     initArgs.maxHeight = maxHeight;
     initArgs.subMChannels = subMChannels;
     initArgs.numGroupsPerKernel = numGroupsPerKernel;
-    initArgs.shift = 0;
+    initArgs.shift = 10;
     initArgs.Fr = kernelWidth;
     initArgs.Fc = kernelHeight;
     initArgs.strideX = strideWidth;
@@ -85,8 +85,6 @@ void mmaConv(){
     initArgs.mode = MMALIB_LINEAR;
     initArgs.weightReorderFlag = 0;
     initArgs.numBiasVals = numBiasVals;
-
-
 
     int32_t handleSize = MMALIB_CNN_convolve_row_ixX_ixX_oxX_getHandleSize(&initArgs);
     MMALIB_kernelHandle kernelHandle = malloc(handleSize);
@@ -123,26 +121,16 @@ void mmaConv(){
 
     int8_t* kernel = (int8_t*)malloc(9);
     for(int i=0;i<9;i++){
-        kernel[i] = 1;
-        if(i%9==8 || i%9==0){
-            kernel[i] = 2;
-        }
+        kernel[i] = 114;
     }
 
-    const int inSize = 257 * 3 + 1;
     int8_t* src = (int8_t*)malloc(inSize);// paddingを考慮に入れてサイズを確保する
-
     for(int i=0;i<inSize;i++){
-        if(i % 257 == 0){
-            src[i] = i/257;
-        }
-        else{
-            src[i] = 1;
-        }
+        src[i]=i%2;
     }
 
-    int8_t* dst = (int8_t*)malloc(256);
-    for(int i=0;i<256;i++){
+    int8_t* dst = (int8_t*)malloc(outSize);
+    for(int i=0;i<outSize;i++){
         dst[i]=0;
     }
 
@@ -163,4 +151,7 @@ void mmaConv(){
 
     printf("MatMulIntrinsics done...\n");
     free(kernelHandle);
+    free(kernel);
+    free(src);
+    free(dst);
 }
