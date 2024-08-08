@@ -17,7 +17,7 @@ void mmaConv(){
     int kDim = 3 * 3 * numInChannels;
     kernelBuffer.dim_x = kDim;
     kernelBuffer.dim_y = numOutChannels * numGroupsPerKernel;// numOfOutputChKerBuf * numGroupsPerKernel
-    kernelBuffer.stride_y = kDim;// pitchA
+    kernelBuffer.stride_y = 64;// pitchA
     kernelBuffer.data_type = MMALIB_INT8;
 
     int inSize = 66048;
@@ -39,7 +39,7 @@ void mmaConv(){
     biasBuffer.stride_y = numBiasVals * numBytes;// 今回はゼロ。
     biasBuffer.data_type = MMALIB_INT8;// カーネルと同じデータ型。
 
-    int outSize = 63980;//63488;// validColsOut(256) * 2 + align
+    int outSize = 63990;//63488;// validColsOut(256) * 2 + align
 
     MMALIB_bufParams3D_t dstBuffer;
     dstBuffer.dim_x = outSize;// pitchC/numBytes
@@ -55,8 +55,8 @@ void mmaConv(){
     int strideHeight = 1;
     int validColsIn = inSize;
     int subMChannels = 1;
-    int inWidth = 1032;
-    int pad = 0;
+    int inWidth = 1030;
+    int pad = 1;
     int maxHeight = 256;
 
     MMALIB_CNN_convolve_row_ixX_ixX_oxX_InitArgs initArgs;
@@ -69,11 +69,11 @@ void mmaConv(){
     initArgs.inputPitchPerRow = 0;
     initArgs.outputPitchPerRow = 0;
     initArgs.inWidth = inWidth;
-    initArgs.pad = 1;
+    initArgs.pad = pad;
     initArgs.maxHeight = maxHeight;
     initArgs.subMChannels = subMChannels;
     initArgs.numGroupsPerKernel = numGroupsPerKernel;
-    initArgs.shift = 10;
+    initArgs.shift = 0;
     initArgs.Fr = kernelWidth;
     initArgs.Fc = kernelHeight;
     initArgs.strideX = strideWidth;
@@ -106,27 +106,23 @@ void mmaConv(){
                                                                         &initArgs);
     printf("Init status = %d.\n", initStatus);
 
-    int validColsInLast = 772;
-    int validColsPerRowInLast = 0;
-    int validRowsInLast = 0;
-
     MMALIB_CNN_convolve_row_ixX_ixX_oxX_ExecInArgs kerExecInArgs;
     kerExecInArgs.subMChannels = subMChannels;
-    kerExecInArgs.validColsIn       = validColsInLast;
-    kerExecInArgs.validColsPerRowIn = validColsPerRowInLast;
-    kerExecInArgs.validRowsIn       = validRowsInLast;
+    kerExecInArgs.validColsIn       = inSize;
+    kerExecInArgs.validColsPerRowIn = 0;//inWidth;
+    kerExecInArgs.validRowsIn       = 0;//64;
     kerExecInArgs.pad               = pad;
 
     MMALIB_CNN_convolve_row_ixX_ixX_oxX_ExecOutArgs kerExecOutArgs;
 
     int8_t* kernel = (int8_t*)malloc(9);
     for(int i=0;i<9;i++){
-        kernel[i] = 114;
+        kernel[i] = 1;
     }
 
     int8_t* src = (int8_t*)malloc(inSize);// paddingを考慮に入れてサイズを確保する
     for(int i=0;i<inSize;i++){
-        src[i]=i%2;
+        src[i]=i%10;
     }
 
     int8_t* dst = (int8_t*)malloc(outSize);
