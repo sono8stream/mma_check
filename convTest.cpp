@@ -162,7 +162,8 @@ void mmaConvFullSpeed(){
     int numGroupsPerKernel = 1;
 
     MMALIB_bufParams2D_t kernelBuffer;
-    int kDim = 3 * 3 * numInChannels;
+    int kernelLength=3;
+    int kDim = kernelLength * kernelLength * numInChannels;
     kernelBuffer.dim_x = kDim;
     kernelBuffer.dim_y = numOutChannels * numGroupsPerKernel;// numOfOutputChKerBuf * numGroupsPerKernel
     kernelBuffer.stride_y = 64;// pitchA
@@ -171,9 +172,10 @@ void mmaConvFullSpeed(){
     int w=256;
     int h=10;
     int pad=1;
+    int shellSize=kernelLength/2;
 
     //雑に256*10行に3x3Convolutionやってみる。
-    int inSize = w*h+w*pad*2+h*pad+pad*pad*2+1;
+    int inSize = w*h+w*pad*2+h*pad+pad*pad*2+shellSize;
 
     MMALIB_bufParams2D_t srcBuffer;
     srcBuffer.dim_x = inSize;// inChOffset
@@ -181,9 +183,7 @@ void mmaConvFullSpeed(){
     srcBuffer.stride_y = inSize;// inChOffset
     srcBuffer.data_type = MMALIB_UINT8;
 
-    int kernelWidth = 3;
-    int kernelHeight = 3;
-    int numBiasVals = kDim - kernelWidth*kernelHeight*numInChannels;// 今回はゼロ。
+    int numBiasVals = kDim - kernelLength*kernelLength*numInChannels;// 今回はゼロ。
     int numBytes = 1;
 
     MMALIB_bufParams2D_t biasBuffer;
@@ -192,7 +192,7 @@ void mmaConvFullSpeed(){
     biasBuffer.stride_y = numBiasVals * numBytes;// 今回はゼロ。
     biasBuffer.data_type = MMALIB_INT8;// カーネルと同じデータ型。
 
-    int outSize = (w+pad)*h;
+    int outSize = (w+pad)*(h+pad*2-shellSize*2);
 
     MMALIB_bufParams3D_t dstBuffer;
     dstBuffer.dim_x = outSize;// pitchC/numBytes
@@ -226,8 +226,8 @@ void mmaConvFullSpeed(){
     initArgs.subMChannels = subMChannels;
     initArgs.numGroupsPerKernel = numGroupsPerKernel;
     initArgs.shift = 0;
-    initArgs.Fr = kernelWidth;
-    initArgs.Fc = kernelHeight;
+    initArgs.Fr = kernelLength;
+    initArgs.Fc = kernelLength;
     initArgs.strideX = strideWidth;
     initArgs.strideY = strideHeight;
     initArgs.dilationX = dilationWidth;
@@ -267,8 +267,8 @@ void mmaConvFullSpeed(){
 
     MMALIB_CNN_convolve_row_ixX_ixX_oxX_ExecOutArgs kerExecOutArgs;
 
-    int8_t* kernel = (int8_t*)malloc(9);
-    for(int i=0;i<9;i++){
+    int8_t* kernel = (int8_t*)malloc(kernelLength*kernelLength);
+    for(int i=0;i<kernelLength*kernelLength;i++){
         kernel[i] = 1;
     }
 
