@@ -68,7 +68,8 @@
 --cinit_compression=off
 -e _c_int00
 
-#define DDR0_ALLOCATED_START  0xA0000000
+// ‚¨ŽŽ‚µ‚Å64bit‘Î‰ž
+#define DDR0_ALLOCATED_START  0x0A0000000//0xA0000000
 #define C7X_ALLOCATED_START DDR0_ALLOCATED_START + 0x08000000
 
 #define C7X_EXT_DATA_BASE   (C7X_ALLOCATED_START + 0x00100000)
@@ -85,6 +86,7 @@ MEMORY
     C7X_TEXT:      org = C7X_MEM_TEXT_BASE,   len = 0x00100000   /*  1MB DDR */
     C7X_DATA:      org = C7X_MEM_DATA_BASE,   len = 0x00100000   /*  1MB DDR */
     C7X_DDR_SPACE: org = C7X_DDR_SPACE_BASE,  len = 0x00C00000   /* 12MB DDR */
+    C7X_DDR_64:    org = 0x880000000,         len = 0x00100000   /*  1MB DDR */
 }
 
 SECTIONS

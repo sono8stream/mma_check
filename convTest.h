@@ -1,2 +1,4 @@
 
 void mmaConv();
+
+void mmaConvFullSpeed();
