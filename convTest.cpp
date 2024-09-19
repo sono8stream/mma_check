@@ -183,7 +183,7 @@ void mmaConvFullSpeed(){
     srcBuffer.stride_y = inSize;// inChOffset
     srcBuffer.data_type = MMALIB_UINT8;
 
-    int numBiasVals = kDim - kernelLength*kernelLength*numInChannels;// 今回はゼロ。
+    int numBiasVals = kDim - kernelLength*kernelLength*numInChannels;// 今回はゼロのはず。
     int numBytes = 1;
 
     MMALIB_bufParams2D_t biasBuffer;
@@ -212,7 +212,7 @@ void mmaConvFullSpeed(){
     int maxHeight = 10;
 
     MMALIB_CNN_convolve_row_ixX_ixX_oxX_InitArgs initArgs;
-    initArgs.funcStyle = MMALIB_FUNCTION_NATC;
+    initArgs.funcStyle = MMALIB_FUNCTION_NATC;//MMALIB_FUNCTION_OPTIMIZED;
     initArgs.No = numOutChannels;
     initArgs.inChOffset = inSize;
     initArgs.validColsIn = validColsIn;
@@ -267,17 +267,18 @@ void mmaConvFullSpeed(){
 
     MMALIB_CNN_convolve_row_ixX_ixX_oxX_ExecOutArgs kerExecOutArgs;
 
-    int8_t* kernel = (int8_t*)malloc(kernelLength*kernelLength);
+    // データをL2に置いてみる。
+    int8_t* kernel = (int8_t*)0x64810000;
     for(int i=0;i<kernelLength*kernelLength;i++){
         kernel[i] = 1;
     }
 
-    int8_t* src = (int8_t*)malloc(inSize);// paddingを考慮に入れてサイズを確保する
+    int8_t* src = (int8_t*)0x64820000;// paddingを考慮に入れてサイズを確保する
     for(int i=0;i<inSize;i++){
         src[i]=i%10;
     }
 
-    int8_t* dst = (int8_t*)malloc(outSize);
+    int8_t* dst = (int8_t*)0x64840000;
     for(int i=0;i<outSize;i++){
         dst[i]=0;
     }
