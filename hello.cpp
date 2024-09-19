@@ -24,7 +24,7 @@ int main(void)
     *(hoge+1)=2;
 
     //mmaLinalg();
-    mmaConv();
+    mmaConvFullSpeed();
     //mmaDeconv();
 
     //seTestTranspose();

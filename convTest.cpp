@@ -168,7 +168,12 @@ void mmaConvFullSpeed(){
     kernelBuffer.stride_y = 64;// pitchA
     kernelBuffer.data_type = MMALIB_INT8;
 
-    int inSize = 66048;
+    int w=256;
+    int h=10;
+    int pad=1;
+
+    //雑に256*10行に3x3Convolutionやってみる。
+    int inSize = w*h+w*pad*2+h*pad+pad*pad*2+1;
 
     MMALIB_bufParams2D_t srcBuffer;
     srcBuffer.dim_x = inSize;// inChOffset
@@ -187,7 +192,7 @@ void mmaConvFullSpeed(){
     biasBuffer.stride_y = numBiasVals * numBytes;// 今回はゼロ。
     biasBuffer.data_type = MMALIB_INT8;// カーネルと同じデータ型。
 
-    int outSize = 63990;//63488;// validColsOut(256) * 2 + align
+    int outSize = (w+pad)*h;
 
     MMALIB_bufParams3D_t dstBuffer;
     dstBuffer.dim_x = outSize;// pitchC/numBytes
@@ -203,9 +208,8 @@ void mmaConvFullSpeed(){
     int strideHeight = 1;
     int validColsIn = inSize;
     int subMChannels = 1;
-    int inWidth = 1030;
-    int pad = 1;
-    int maxHeight = 256;
+    int inWidth = w;
+    int maxHeight = 10;
 
     MMALIB_CNN_convolve_row_ixX_ixX_oxX_InitArgs initArgs;
     initArgs.funcStyle = MMALIB_FUNCTION_NATC;
