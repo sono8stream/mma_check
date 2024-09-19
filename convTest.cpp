@@ -162,7 +162,7 @@ void mmaConvFullSpeed(){
     int numGroupsPerKernel = 1;
 
     MMALIB_bufParams2D_t kernelBuffer;
-    int kernelLength=3;
+    int kernelLength=5;
     int kDim = kernelLength * kernelLength * numInChannels;
     kernelBuffer.dim_x = kDim;
     kernelBuffer.dim_y = numOutChannels * numGroupsPerKernel;// numOfOutputChKerBuf * numGroupsPerKernel
@@ -171,7 +171,7 @@ void mmaConvFullSpeed(){
 
     int w=256;
     int h=10;
-    int pad=1;
+    int pad=2;
     int shellSize=kernelLength/2;
 
     //éGÇ…256*10çsÇ…3x3ConvolutionÇ‚Ç¡ÇƒÇ›ÇÈÅB
