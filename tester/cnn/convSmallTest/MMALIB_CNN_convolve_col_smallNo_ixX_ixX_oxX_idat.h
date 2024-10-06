@@ -27,7 +27,7 @@
 
 
 // include test infrastructure provided by MMALIB
-//#include "../../test/MMALIB_test.h"
+#include "../../test/MMALIB_test.h"
 
 typedef struct {
    uint8_t testPattern;   /* 0: constant, 1: sequential, 2: random, 3: static array, 4: file, etc */

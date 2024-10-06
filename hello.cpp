@@ -7,10 +7,10 @@
 //#include "linalgTest.h"
 
 extern "C" {
+#include "tester/test/MMALIB_test.h"
 #include "tester/cnn/convSmallTest/MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_d.h"
+#include "tester/cnn/convTest/MMALIB_CNN_convolve_row_ixX_ixX_oxX_d.h"
 }
-
-#define ALL_TEST_CASES
 
 /**
  * hello.cpp
@@ -34,9 +34,12 @@ int main(void)
     *hoge=1;
     *(hoge+1)=2;
 
-    resetHwaError();
+    //resetHwaError();
 
-    mainsub();
+    //mainConvSmall();
+    mainConv();
+
+    //MMALIB_TEST_init();
 
     //mmaLinalg();
     mmaConvFullSpeed();

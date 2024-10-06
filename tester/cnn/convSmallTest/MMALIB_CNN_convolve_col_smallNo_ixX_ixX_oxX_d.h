@@ -1,1 +1,1 @@
-int mainsub();
+int mainConvSmall();

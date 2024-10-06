@@ -15,6 +15,7 @@
 
 #include "MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_idat.h"
 
+#define ALL_TEST_CASES
 
 #if (defined(ALL_TEST_CASES) || (TEST_CATEGORY == 1000) || (TEST_CASE == 1001))
 #include "test_data/MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_idat_testcase1001.h"
