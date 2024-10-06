@@ -10,6 +10,8 @@ extern "C" {
 #include "tester/cnn/convSmallTest/MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_d.h"
 }
 
+#define ALL_TEST_CASES
+
 /**
  * hello.cpp
  */
