@@ -21,6 +21,8 @@
 // include MMALIB
 #include <mmalib.h>
 
+#include "MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_d.h"
+
 // include test infrastructure provided by MMALIB
 #include "../../test/MMALIB_test.h"
 

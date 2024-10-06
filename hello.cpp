@@ -6,6 +6,10 @@
 //#include "deconvTest.h"
 //#include "linalgTest.h"
 
+extern "C" {
+#include "tester/cnn/convSmallTest/MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_d.h"
+}
+
 /**
  * hello.cpp
  */
@@ -29,6 +33,8 @@ int main(void)
     *(hoge+1)=2;
 
     resetHwaError();
+
+    mainsub();
 
     //mmaLinalg();
     mmaConvFullSpeed();
