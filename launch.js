@@ -88,27 +88,106 @@ importPackage(Packages.com.ti.ccstudio.scripting.environment);
 importPackage(Packages.java.lang);
 importPackage(Packages.java.io);
 
+function updateScriptVars() {
+  //Open a debug session
+  dsMCU1_0 = debugServer.openSession(".*MCU_Cortex_R5_0");
+  dsDMSC_0 = debugServer.openSession(".*DMSC_Cortex_M3_0");
+}
+
+function printVars() {
+  updateScriptVars();
+}
+
 function connectTargets() {
   /* Set timeout of 20 seconds */
   script.setScriptTimeout(200000);
-
-  // setup DDR
-  dsDMSC_0 = debugServer.openSession(".*DMSC_Cortex_M3_0");
-
+  updateScriptVars();
   sysResetVar = dsDMSC_0.target.getResetType(1);
   sysResetVar.issueReset();
-
   print("Connecting to DMSC_Cortex_M3_0!");
   // Connect targets
   dsDMSC_0.target.connect();
+  print("Fill R5F ATCM memory...");
+  dsDMSC_0.memory.fill(0x61000000, 0, 0x8000, 0);
+  print("Writing While(1) for R5F");
+  dsDMSC_0.memory.writeWord(
+    0,
+    0x61000000,
+    0xe59ff004
+  ); /* ldr        pc, [pc, #4] */
+  dsDMSC_0.memory.writeWord(0, 0x61000004, 0x38); /* Address 0x38 */
+  dsDMSC_0.memory.writeWord(0, 0x61000038, 0xeafffffe); /* b          #0x38 */
+  print("Loading DMSC Firmware ... " + sysfw_bin);
+  // Load the DMSC firmware
+  dsDMSC_0.memory.loadRaw(0, 0x40000, sysfw_bin, 32, false);
+  print("DMSC Firmware Load Done...");
+  // Set Stack pointer and Program Counter
+  stackPointer = dsDMSC_0.memory.readWord(0, 0x40000);
+  progCounter = dsDMSC_0.memory.readWord(0, 0x40004);
+  dsDMSC_0.memory.writeRegister("SP", stackPointer);
+  dsDMSC_0.memory.writeRegister("PC", progCounter);
+  print("DMSC Firmware run starting now...");
+  // Run the DMSC firmware
+  dsDMSC_0.target.runAsynch();
   // Run the DDR Configuration
   print("Running the DDR configuration... Wait till it completes!");
   dsDMSC_0.target.halt();
   dsDMSC_0.expression.evaluate("J7ES_LPDDR4_Config_Late()");
   dsDMSC_0.target.runAsynch();
+
+  print("Connecting to MCU Cortex_R5_0!");
+
+  // Connect the MCU R5F
+  dsMCU1_0.target.connect();
+  // This is done to support other boot modes. OSPI is the most stable.
+  // MMC is not always stable.
+  bootMode = dsMCU1_0.memory.readWord(0, 0x43000030) & 0xf8;
+  print(" WKUP Boot Mode is " + bootMode);
+  mainBootMode = dsMCU1_0.memory.readWord(0, 0x100030) & 0xff;
+  print(" Main Boot Mode is " + mainBootMode);
+  if (bootMode != 0x38 || mainBootMode != 0x11) {
+    print("Disable MCU Timer for ROM clean up");
+    dsMCU1_0.memory.writeWord(
+      0,
+      0x40400010,
+      0x1
+    ); /* Write reset to MCU Timer 0. Left running by ROM */
+    dsMCU1_0.memory.writeWord(
+      0,
+      0x40f80430,
+      0xffffffff
+    ); /* Clear Pending Interrupts */
+    dsMCU1_0.memory.writeWord(
+      0,
+      0x40f80018,
+      0x0
+    ); /* Clear Pending Interrupts */
+    // Reset the R5F to be in clean state.
+    dsMCU1_0.target.reset();
+    // Load the board configuration init file.
+    dsMCU1_0.expression.evaluate('GEL_Load("' + ccs_init_elf_file + '")');
+    // Run Asynchronously
+    dsMCU1_0.target.runAsynch();
+    print("Running Async");
+    // Halt the R5F and re-run.
+    dsMCU1_0.target.halt();
+  }
+  // Reset the R5F to be in clean state.
+  dsMCU1_0.target.reset();
+  print("Running the board configuration initialization from R5!");
+  // Load the board configuration init file.
+  dsMCU1_0.memory.loadProgram(ccs_init_elf_file);
+  // Halt the R5F and re-run.
+  dsMCU1_0.target.halt();
+  // Run Synchronously for the executable to finish
+  dsMCU1_0.target.run();
 }
 
 function disconnectTargets() {
+  updateScriptVars();
+  // Reset MCU1_0
+  dsMCU1_0.target.reset();
+  // Disconnect targets
   dsDMSC_0.target.disconnect();
 }
 
@@ -183,15 +262,14 @@ function doEverything() {
   printVars();
   connectTargets();
   disconnectTargets();
-  // sampleDDRCheck();
-  // if (clearCLECSecureClaimFlag == 1) {
-  //   print("Clearing CLEC Secure Claim...");
-  //   clearCLECSecureClaim();
-  // }
-  // if (loadSciserverFlag == 1) {
-  //   loadSciserver();
-  // }
-
+  sampleDDRCheck();
+  if (clearCLECSecureClaimFlag == 1) {
+    print("Clearing CLEC Secure Claim...");
+    clearCLECSecureClaim();
+  }
+  if (loadSciserverFlag == 1) {
+    loadSciserver();
+  }
   print("Happy Debugging!!");
 }
 

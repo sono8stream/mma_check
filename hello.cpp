@@ -3,8 +3,8 @@
 #include <mmalib.h>
 #include <stdint.h>
 #include "convTest.h"
-#include "deconvTest.h"
-#include "linalgTest.h"
+//#include "deconvTest.h"
+//#include "linalgTest.h"
 
 /**
  * hello.cpp
@@ -15,6 +15,11 @@ void updatePC(){
 
 }
 
+void resetHwaError(){
+    __HWAOPEN(configRegisterStruct_i8u_i8s_o8u,offsetRegStruct_diagonal_8bit,__MMA_OPEN_FSM_RESET);
+    __HWACLOSE(0);
+}
+
 int main(void)
 {
     printf("Hello World!\n");
@@ -22,6 +27,8 @@ int main(void)
     char* hoge=(char*)0xA0300000;
     *hoge=1;
     *(hoge+1)=2;
+
+    resetHwaError();
 
     //mmaLinalg();
     mmaConvFullSpeed();

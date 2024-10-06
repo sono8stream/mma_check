@@ -210,9 +210,6 @@
 								<option id="com.ti.ccstudio.buildDefinitions.C7000_3.1.linkerID.XML_LINK_INFO.1741679823" name="Detailed link information data-base into &lt;file&gt; (--xml_link_info, -xml_link_info)" superClass="com.ti.ccstudio.buildDefinitions.C7000_3.1.linkerID.XML_LINK_INFO" value="${ProjName}_linkInfo.xml" valueType="string"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="com.ti.ccstudio.buildDefinitions.C7000_3.1.linkerID.LIBRARY.880003867" name="Include library file or command file as input (--library, -l)" superClass="com.ti.ccstudio.buildDefinitions.C7000_3.1.linkerID.LIBRARY" valueType="libs">
 									<listOptionValue builtIn="false" value="libc.a"/>
-									<listOptionValue builtIn="false" value="C:\ti\ti-processor-sdk-rtos-j721e-evm-10_00_00_05\mmalib_10_00_00_09\lib\C7100\release\mmalib_C7100.lib"/>
-									<listOptionValue builtIn="false" value="C:\ti\ti-processor-sdk-rtos-j721e-evm-10_00_00_05\mmalib_10_00_00_09\lib\C7100\release\common_C7100.lib"/>
-									<listOptionValue builtIn="false" value="C:\ti\ti-processor-sdk-rtos-j721e-evm-10_00_00_05\mmalib_10_00_00_09\lib\C7100\release\mmalib_cn_C7100.lib"/>
 								</option>
 								<inputType id="com.ti.ccstudio.buildDefinitions.C7000_3.1.exeLinker.inputType__CMD_SRCS.1547982798" name="Linker Command Files" superClass="com.ti.ccstudio.buildDefinitions.C7000_3.1.exeLinker.inputType__CMD_SRCS"/>
 								<inputType id="com.ti.ccstudio.buildDefinitions.C7000_3.1.exeLinker.inputType__CMD2_SRCS.2033066036" name="Linker Command Files" superClass="com.ti.ccstudio.buildDefinitions.C7000_3.1.exeLinker.inputType__CMD2_SRCS"/>

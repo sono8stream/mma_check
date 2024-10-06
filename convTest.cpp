@@ -233,7 +233,7 @@ void mmaConvFullSpeed(){
     int maxHeight = 10;
 
     MMALIB_CNN_convolve_row_ixX_ixX_oxX_InitArgs initArgs;
-    initArgs.funcStyle = MMALIB_FUNCTION_OPTIMIZED;//MMALIB_FUNCTION_NATC;
+    initArgs.funcStyle = MMALIB_FUNCTION_OPTIMIZED;//MMALIB_FUNCTION_NATC;//
     initArgs.No = numOutChannels;
     initArgs.inChOffset = inSize;
     initArgs.validColsIn = validColsIn;
