@@ -85,7 +85,7 @@ MEMORY
     C7X_EXT_D:     org = C7X_EXT_DATA_BASE,   len = 0x00100000   /*  1MB DDR */
     C7X_TEXT:      org = C7X_MEM_TEXT_BASE,   len = 0x00100000   /*  1MB DDR */
     C7X_DATA:      org = C7X_MEM_DATA_BASE,   len = 0x00100000   /*  1MB DDR */
-    C7X_DDR_SPACE: org = C7X_DDR_SPACE_BASE,  len = 0x00C00000   /* 12MB DDR */
+    C7X_DDR_SPACE: org = C7X_DDR_SPACE_BASE,  len = 0x05000000   /* 12MB DDR */
     C7X_DDR_64:    org = 0x880000000,         len = 0x00100000   /*  1MB DDR */
 }
 

@@ -11,3 +11,7 @@ encoding//DebugWithAsm/objects.mk=UTF-8
 encoding//DebugWithAsm/sources.mk=UTF-8
 encoding//DebugWithAsm/subdir_rules.mk=UTF-8
 encoding//DebugWithAsm/subdir_vars.mk=UTF-8
+encoding//DebugWithAsm/tester/cnn/convSmallTest/subdir_rules.mk=UTF-8
+encoding//DebugWithAsm/tester/cnn/convSmallTest/subdir_vars.mk=UTF-8
+encoding//DebugWithAsm/tester/common/c71/subdir_rules.mk=UTF-8
+encoding//DebugWithAsm/tester/common/c71/subdir_vars.mk=UTF-8
