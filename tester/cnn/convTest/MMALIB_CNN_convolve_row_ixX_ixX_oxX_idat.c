@@ -43,6 +43,8 @@
 
 #include "MMALIB_CNN_convolve_row_ixX_ixX_oxX_idat.h"
 
+#define TEST_CASE 281
+
 #if ((TEST_CASE == 13) || (TEST_CATEGORY == 1000))
 #include "test_data/MMALIB_CNN_convolve_row_ixX_ixX_oxX_idat_testcase13.h"
 #endif
