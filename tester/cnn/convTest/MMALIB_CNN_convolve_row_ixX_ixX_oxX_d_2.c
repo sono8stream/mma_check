@@ -284,6 +284,11 @@ int MMALIB_CNN_convolve_row_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t LevelOfFee
       // for debug
       {
          int iter=0;
+         // for(;iter<kDim;iter++){
+         //    src0[iter]=iter;
+         // }
+         
+         iter=0;
          for(;iter<validColsIn;iter++){
             src1[iter]=iter%10;
          }
@@ -295,17 +300,24 @@ int MMALIB_CNN_convolve_row_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t LevelOfFee
          /* Fill input arrays according to desired test pattern */
          if (kerInitArgs.weightReorderFlag == 1 && prm[tpi].staticKernel != NULL)
          {
-            TI_fillBuffer(prm[tpi].testPattern,
-                          (uint8_t)255,
-                          src2,
-                          prm[tpi].staticKernel,
-                          numOutChannels * numBiasVals,
-                          1,
-                          numOutChannels * numBiasVals,
-                          numBytes,
-                          testPatternString);
+            // TI_fillBuffer(prm[tpi].testPattern,
+            //               (uint8_t)255,
+            //               src2,
+            //               prm[tpi].staticKernel,
+            //               numOutChannels * numBiasVals,
+            //               1,
+            //               numOutChannels * numBiasVals,
+            //               numBytes,
+            //               testPatternString);
+                
+            // for debug          
+            int8_t *src3 = (int8_t*)0x64860000;      
+            int iter=0;
+            for(;iter<kDim;iter++){
+               src3[iter]=iter;
+            }
 
-            MMALIB_CNN_convolve_row_reorderWeights(prm[tpi].staticKernel, src0, src2, &src0_addr, &src2_addr, &reorderWeights, &kerInitArgs);
+            MMALIB_CNN_convolve_row_reorderWeights(src3, src0, src2, &src0_addr, &src2_addr, &reorderWeights, &kerInitArgs);
          }
          else
          {
@@ -366,12 +378,6 @@ int MMALIB_CNN_convolve_row_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t LevelOfFee
             MMALIB_DEBUGPRINTFN(1, "src1_Iter %p dst_iter %p dst %p src0 %p\n", src1_Iter, dst_iter, dst, src0);
             MMALIB_DEBUGPRINTFN(1, "subMChannels %d, validColsIn %d MCount %d NCount %d subN %d\n",
                                  subMChannels, validColsIn, MCount, NCount, subN);
-            
-            // for debug
-            int iter=0;
-            for(;iter<kDim;iter++){
-               src0[iter]=1;
-            }
             
             long long startTsc=__TSC;
             TI_profile_start(TI_PROFILE_KERNEL_OPT);
