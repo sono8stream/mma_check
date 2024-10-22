@@ -42,6 +42,9 @@ int16_t volatile volatileSum = 0; // use volatile to keep compiler from removing
 int MMALIB_CNN_convolve_row_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t LevelOfFeedback)
 {
    int32_t tpi; /* test parameter index */
+   int32_t fail = 0;
+   uint64_t archCycles, estCycles;
+   uint32_t num_pts = 0;
    /* Test Parameters */
    convolve_row_ixX_ixX_oxX_testParams_t *prm;
 
@@ -67,46 +70,48 @@ int MMALIB_CNN_convolve_row_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t LevelOfFee
       int32_t status_opt_vs_ref = TI_TEST_KERNEL_FAIL;      // test status : optimized C vs. static reference
       MMALIB_STATUS currTestStatus = MMALIB_STATUS_NOT_SET; /* Test current testcase status */
 
-      uint32_t inp0Size, inp1Size;
+      uint32_t inp0Size, inp1Size, outSize;
 
-      int kernelLength=3;
-      int numInChannels = 1;
-      int numOutChannels = 1;
-      int kDim = kernelLength * kernelLength * numInChannels;
-      int h=8;
-      int w=8;
-      int shellSize=kernelLength/2;
-      int pad=shellSize;
-      int inSize = w*h+w*pad*2+h*pad+pad*pad*2+shellSize;
-      int outSize = (w+pad)*(h+pad*2-shellSize*2);
-      int maxHeight = 10;
-
-      int32_t inWidth = w;
-      int32_t inputBlockWidth = w + pad;
-      int32_t inChOffset = inSize;
-      int32_t numOfOutputChKerBuf = 1;
-      int32_t subMChannels = 1;
-      int32_t kernelWidth = kernelLength;
-      int32_t kernelHeight = kernelLength;
-      int32_t dilationWidth = 1;
-      int32_t dilationHeight = 1;
-      int32_t validColsIn = inSize;
-      int32_t strideWidth = 1;
-      int32_t strideHeight = 1;
-      int32_t pitchA = 64;
-      int32_t pitchC = outSize;
-      uint8_t dataTypeA = MMALIB_INT8;
-      uint8_t dataTypeB = MMALIB_UINT8;
-      uint8_t dataTypeC = MMALIB_UINT8;
-      uint8_t activationType = MMALIB_RELU;
-      int32_t shift = 0;
-      int32_t bias = 0;
-      uint8_t mode = MMALIB_LINEAR;
-      int32_t validColsPerRowIn = 0;
-      int32_t validRowsIn = 0;
-      int32_t outputPitchPerRow = 0;
-      int32_t inputPitchPerRow = 0;
-      int32_t numGroupsPerKernel = 1;
+      int32_t inWidth = prm[tpi].inWidth;
+      int32_t inputBlockWidth = inWidth + prm[tpi].pad;
+      int32_t inChOffset = prm[tpi].inChOffset;
+      int32_t numInChannels = prm[tpi].numInChannels;
+      int32_t numOutChannels = prm[tpi].numOutChannels;
+      int32_t numOfOutputChKerBuf = prm[tpi].numOfOutputChKerBuf;
+      int32_t subMChannels = prm[tpi].subMChannels;
+      int32_t kernelWidth = prm[tpi].kernelWidth;
+      int32_t kernelHeight = prm[tpi].kernelHeight;
+      int32_t dilationWidth = prm[tpi].dilationWidth;
+      int32_t dilationHeight = prm[tpi].dilationHeight;
+      int32_t validColsIn = prm[tpi].validColsIn;
+      int32_t strideWidth = prm[tpi].strideWidth;
+      int32_t strideHeight = prm[tpi].strideHeight;
+      int32_t kDim = prm[tpi].kDim;
+      int32_t pitchA = prm[tpi].pitchA;
+      int32_t pitchC = prm[tpi].pitchC;
+      uint8_t dataTypeA = prm[tpi].dataTypeA;
+      uint8_t dataTypeB = prm[tpi].dataTypeB;
+      uint8_t dataTypeC = prm[tpi].dataTypeC;
+      uint8_t activationType = prm[tpi].activationType;
+      int32_t pad = prm[tpi].pad;
+      int32_t shift = prm[tpi].qShift;
+      int32_t bias = prm[tpi].biasB;
+      int32_t expectedStatusCode = prm[tpi].expectedStatusCode;
+      uint8_t mode = prm[tpi].mode;
+      int32_t circularOffset = prm[tpi].circularOffset;
+      int32_t maxHeight = prm[tpi].maxHeight;
+      int32_t totalN = prm[tpi].totalN;
+      int32_t subN = prm[tpi].subN;
+      int32_t validColsPerRowIn = prm[tpi].validColsPerRowIn;
+      int32_t validRowsIn = prm[tpi].validRowsIn;
+      int32_t outputPitchPerRow = prm[tpi].outputPitchPerRow;
+      int32_t inputPitchPerRow = prm[tpi].inputPitchPerRow;
+      int32_t validColsInlast = prm[tpi].validColsInlast;
+      int32_t validRowsInlast = prm[tpi].validRowsInlast;
+      int32_t validColsPerRowInlast = prm[tpi].validColsPerRowInlast;
+      int32_t numGroupsPerKernel = prm[tpi].numGroupsPerKernel;
+      int32_t MCounter = numOutChannels / subMChannels;
+      MCounter = (numOutChannels % subMChannels == 0) ? MCounter - 1 : MCounter;
 
       int32_t testNum = prm[tpi].testID;
       int32_t numBytes = 1;
@@ -166,6 +171,7 @@ int MMALIB_CNN_convolve_row_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t LevelOfFee
       /* Compute buffer sizes */
       inp0Size = numOfOutputChKerBuf * pitchA * numGroupsPerKernel;
       inp1Size = numInChannels * inChOffset * numGroupsPerKernel * numBytes;
+      outSize = numOutChannels * numGroupsPerKernel * pitchC * (totalN / subN);
 
       /* Allocate buffers for each test vector */
       MMALIB_DEBUGPRINTFN(1,
@@ -174,49 +180,6 @@ int MMALIB_CNN_convolve_row_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t LevelOfFee
 
       MMALIB_DEBUGPRINTFN(1, "numOfOutputChKerBuf %d, numInChannels %d, numOutChannels %d, totalN %d, subN %d\n",
                           numOfOutputChKerBuf, numInChannels, numOutChannels, totalN, subN);
-
-      {
-         int w=8;
-         
-         int h=8;
-         int shellSize=kernelLength/2;
-         int pad=shellSize;
-
-         //�ｿｽG�ｿｽ�ｿｽ256*10�ｿｽs�ｿｽ�ｿｽ3x3Convolution�ｿｽ�ｿｽ�ｿｽ�ｿｽﾄみゑｿｽB
-         int inSize = w*h+w*pad*2+h*pad+pad*pad*2+shellSize;
-         int outSize = (w+pad)*(h+pad*2-shellSize*2);
-
-         // �ｿｽf�ｿｽ[�ｿｽ^�ｿｽ�ｿｽL2�ｿｽﾉ置�ｿｽ�ｿｽ�ｿｽﾄみゑｿｽB
-         int8_t* kernel = (int8_t*)0x64810000;
-         int i=0;
-         for(;i<kernelLength*kernelLength;i++){
-            kernel[i] = 1;
-         }
-
-         int8_t* src = (int8_t*)0x64820000;// padding�ｿｽ�ｿｽ�ｿｽl�ｿｽ�ｿｽ�ｿｽﾉ難ｿｽ�ｿｽ�ｿｽﾄサ�ｿｽC�ｿｽY�ｿｽ�ｿｽ�ｿｽm�ｿｽﾛゑｿｽ�ｿｽ�ｿｽ
-         for(i=0;i<inSize;i++){
-            src[i]=i%10;
-         }
-
-         int8_t* dst = (int8_t*)0x64840000;
-         for(i=0;i<outSize;i++){
-            dst[i]=0;
-         }
-
-         for(i=0;i<inSize;i++){
-            int x=i%(w+pad);
-            int y=i/(w+pad);
-            if(y-pad>=h){
-               x+=w+pad;
-            }
-
-            if(x==0){
-               printf("\n");
-            }
-
-            printf("%d ",src[i]);
-         }
-      }
 
       MMALIB_bufParams2D_t src0_addr; // paramsWgt
       MMALIB_bufParams2D_t src1_addr; // input
@@ -438,37 +401,57 @@ int MMALIB_CNN_convolve_row_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t LevelOfFee
          // Verify upto two or 3 calls to kernel
          if (currTestStatus == MMALIB_SUCCESS)
          {
-            int8_t *src1_Iter = src1 + NCount * numBytes;
+            for (NCount = 0; NCount < totalN; NCount += subN)
+            {
+               int8_t *src1_Iter = src1 + NCount * numBytes;
+               if (mode == MMALIB_SE_CIRCULAR)
+                  src1_Iter = src1_Iter + circularOffset * numBytes;
 
-            kerExecInArgs.subMChannels = 1;
+               // MCount iterates over number of output channels to be processed in a given kernel call
+               // subMChannels are processed in one kernel call and numOutChannels is total output channels
+               // For memory restrictions not all channels can fit in L2 memory
+               for (MCount = 0; MCount < numOutChannels; MCount += subMChannels)
+               {
+                  if (MCount == MCounter * subMChannels)
+                  {
+                     kerExecInArgs.subMChannels = numOutChannels - MCount;
+                  }
+                  else
+                  {
+                     kerExecInArgs.subMChannels = subMChannels;
+                  }
 
-            // validColsInLast, validColsPerRowInlast, validRowsInlast should be kept same as validColsIn as in init phase.
-            // This parameter is only for cases when last call parameters are different than what is initialized.
-            kerExecInArgs.validColsIn = validColsIn;
-            kerExecInArgs.validColsPerRowIn = validColsPerRowIn;
-            kerExecInArgs.validRowsIn = validRowsIn;
-            kerExecInArgs.pad = pad;
-            int8_t *dst_iter = dst + MCount * pitchC + numOutChannels * iterN * pitchC;
+                  // validColsInLast, validColsPerRowInlast, validRowsInlast should be kept same as validColsIn as in init phase.
+                  // This parameter is only for cases when last call parameters are different than what is initialized.
+                  kerExecInArgs.validColsIn = validColsInlast;
+                  kerExecInArgs.validColsPerRowIn = validColsPerRowInlast;
+                  kerExecInArgs.validRowsIn = validRowsInlast;
+                  kerExecInArgs.pad = pad;
+                  int8_t *dst_iter = dst + MCount * pitchC + numOutChannels * iterN * pitchC;
 
-            MMALIB_DEBUGPRINTFN(1, "src1_Iter %p dst_iter %p dst %p src0 %p\n", src1_Iter, dst_iter, dst, src0);
-            MMALIB_DEBUGPRINTFN(1, "subMChannels %d, validColsIn %d MCount %d NCount %d subN %d\n",
-                                 subMChannels, validColsIn, MCount, NCount, subN);
-            
-            // for debug
-            int iter=9;
-            for(;iter<kDim;iter++){
-               src0[iter]=0;
+                  MMALIB_DEBUGPRINTFN(1, "src1_Iter %p dst_iter %p dst %p src0 %p\n", src1_Iter, dst_iter, dst, src0);
+                  MMALIB_DEBUGPRINTFN(1, "subMChannels %d, validColsIn %d MCount %d NCount %d subN %d\n",
+                                      subMChannels, validColsIn, MCount, NCount, subN);
+                  
+                  // for debug
+                  int iter=9;
+                  for(;iter<kDim;iter++){
+                     src0[iter]=0;
+                  }
+                  
+                  TI_profile_start(TI_PROFILE_KERNEL_OPT);
+                  MMALIB_asm(" MARK 2");
+                  currTestStatus = MMALIB_CNN_convolve_row_ixX_ixX_oxX_exec (
+                      handle, src0, src1_Iter, dst_iter, &kerExecInArgs, &kerExecOutArgs);
+                  MMALIB_asm(" MARK 3");
+                  TI_profile_stop();
+                  validColsOut = kerExecOutArgs.validColsOut;
+                  validColsPerRow = kerExecOutArgs.validColsPerRowOut;
+               }
+
+               MMALIB_DEBUGPRINTFN(1, "OptC: valid cols out %d itenN %d\n", kerExecOutArgs.validColsOut, iterN);
+               iterN++;
             }
-            
-            TI_profile_start(TI_PROFILE_KERNEL_OPT);
-            MMALIB_asm(" MARK 2");
-            currTestStatus = MMALIB_CNN_convolve_row_ixX_ixX_oxX_exec (
-                  handle, src0, src1_Iter, dst_iter, &kerExecInArgs, &kerExecOutArgs);
-            MMALIB_asm(" MARK 3");
-            TI_profile_stop();
-            validColsOut = kerExecOutArgs.validColsOut;
-            validColsPerRow = kerExecOutArgs.validColsPerRowOut;
-
             __SE0_CLOSE();
             __SE1_CLOSE();
 
