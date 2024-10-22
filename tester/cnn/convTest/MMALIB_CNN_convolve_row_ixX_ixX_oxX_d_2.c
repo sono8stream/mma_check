@@ -464,14 +464,6 @@ int MMALIB_CNN_convolve_row_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t LevelOfFee
             __SE1_CLOSE();
 
             validOutputRows = kerExecOutArgs.validRowsOut;
-
-            MMALIB_DEBUGPRINTFN(1, "\n validColsOut after optimized C %d validColsPerRow %d "
-                                   "outputPitchPerRow %d validOutputRows%d\n",
-                                validColsOut, validColsPerRow, outputPitchPerRow, validOutputRows);
-         }
-         else
-         {
-            MMALIB_PRINTF("MMALIB_CNN_convolve_row_ixX_ixX_oxX_init failed with status = %d!\n", currTestStatus);
          }
       }
    }
