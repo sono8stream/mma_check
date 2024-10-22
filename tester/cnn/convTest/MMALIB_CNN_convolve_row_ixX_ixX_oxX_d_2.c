@@ -75,10 +75,10 @@ int MMALIB_CNN_convolve_row_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t LevelOfFee
       int32_t inWidth = prm[tpi].inWidth;
       int32_t inputBlockWidth = inWidth + prm[tpi].pad;
       int32_t inChOffset = prm[tpi].inChOffset;
-      int32_t numInChannels = prm[tpi].numInChannels;
-      int32_t numOutChannels = prm[tpi].numOutChannels;
+      int32_t numInChannels = 1;//prm[tpi].numInChannels;
+      int32_t numOutChannels = 1;//prm[tpi].numOutChannels;
       int32_t numOfOutputChKerBuf = prm[tpi].numOfOutputChKerBuf;
-      int32_t subMChannels = prm[tpi].subMChannels;
+      int32_t subMChannels = 1;//prm[tpi].subMChannels;
       int32_t kernelWidth = prm[tpi].kernelWidth;
       int32_t kernelHeight = prm[tpi].kernelHeight;
       int32_t dilationWidth = prm[tpi].dilationWidth;
@@ -86,7 +86,7 @@ int MMALIB_CNN_convolve_row_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t LevelOfFee
       int32_t validColsIn = prm[tpi].validColsIn;
       int32_t strideWidth = prm[tpi].strideWidth;
       int32_t strideHeight = prm[tpi].strideHeight;
-      int32_t kDim = prm[tpi].kDim;
+      int32_t kDim = 9;//prm[tpi].kDim;
       int32_t pitchA = prm[tpi].pitchA;
       int32_t pitchC = prm[tpi].pitchC;
       uint8_t dataTypeA = prm[tpi].dataTypeA;
@@ -109,7 +109,7 @@ int MMALIB_CNN_convolve_row_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t LevelOfFee
       int32_t validColsInlast = prm[tpi].validColsInlast;
       int32_t validRowsInlast = prm[tpi].validRowsInlast;
       int32_t validColsPerRowInlast = prm[tpi].validColsPerRowInlast;
-      int32_t numGroupsPerKernel = prm[tpi].numGroupsPerKernel;
+      int32_t numGroupsPerKernel = 1;//prm[tpi].numGroupsPerKernel;
       int32_t MCounter = numOutChannels / subMChannels;
       MCounter = (numOutChannels % subMChannels == 0) ? MCounter - 1 : MCounter;
 
@@ -467,6 +467,12 @@ int MMALIB_CNN_convolve_row_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t LevelOfFee
          }
       }
    }
+
+   pProfile[3 * tpi] = (int32_t)TI_profile_get_cycles(TI_PROFILE_KERNEL_OPT);
+   pProfile[3 * tpi + 1] =
+         (int32_t)TI_profile_get_cycles(TI_PROFILE_KERNEL_OPT_WARM);
+   pProfile[3 * tpi + 2] =
+         (int32_t)TI_profile_get_cycles(TI_PROFILE_KERNEL_OPT_WARMWRB);
 }
 
 int test_main(uint32_t *pProfile)
