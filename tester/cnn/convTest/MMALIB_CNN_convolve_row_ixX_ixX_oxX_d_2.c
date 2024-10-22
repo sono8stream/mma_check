@@ -87,32 +87,29 @@ int MMALIB_CNN_convolve_row_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t LevelOfFee
       int32_t subMChannels = 1;//prm[tpi].subMChannels;
       int32_t kernelWidth = kernelSize;
       int32_t kernelHeight = kernelSize;
-      int32_t dilationWidth = prm[tpi].dilationWidth;
-      int32_t dilationHeight = prm[tpi].dilationHeight;
-      int32_t strideWidth = prm[tpi].strideWidth;
-      int32_t strideHeight = prm[tpi].strideHeight;
+      int32_t dilationWidth = 1;
+      int32_t dilationHeight = 1;
+      int32_t strideWidth = 1;
+      int32_t strideHeight = 1;
       int32_t kDim = 9;//prm[tpi].kDim;
       int32_t pitchA = 64;
-      int32_t pitchC = prm[tpi].pitchC;
+      int32_t pitchC = 320;
       uint8_t dataTypeA = prm[tpi].dataTypeA;
       uint8_t dataTypeB = prm[tpi].dataTypeB;
       uint8_t dataTypeC = prm[tpi].dataTypeC;
       uint8_t activationType = prm[tpi].activationType;
       int32_t shift = 0;
       int32_t bias = prm[tpi].biasB;
-      int32_t expectedStatusCode = prm[tpi].expectedStatusCode;
       uint8_t mode = prm[tpi].mode;
-      int32_t circularOffset = prm[tpi].circularOffset;
       int32_t totalN = prm[tpi].totalN;
-      int32_t subN = prm[tpi].subN;
-      int32_t validColsPerRowIn = prm[tpi].validColsPerRowIn;
-      int32_t validRowsIn = prm[tpi].validRowsIn;
-      int32_t outputPitchPerRow = prm[tpi].outputPitchPerRow;
-      int32_t inputPitchPerRow = prm[tpi].inputPitchPerRow;
-      int32_t validColsInlast = prm[tpi].validColsInlast;
-      int32_t validRowsInlast = prm[tpi].validRowsInlast;
-      int32_t validColsPerRowInlast = prm[tpi].validColsPerRowInlast;
-      int32_t numGroupsPerKernel = 1;//prm[tpi].numGroupsPerKernel;
+      int32_t validColsPerRowIn = 0;
+      int32_t validRowsIn = 0;
+      int32_t outputPitchPerRow = 0;
+      int32_t inputPitchPerRow = 0;
+      int32_t validColsInlast = 0;
+      int32_t validRowsInlast = 0;
+      int32_t validColsPerRowInlast = 0;
+      int32_t numGroupsPerKernel = 1;
       int32_t MCounter = numOutChannels / subMChannels;
       MCounter = (numOutChannels % subMChannels == 0) ? MCounter - 1 : MCounter;
 
@@ -174,15 +171,7 @@ int MMALIB_CNN_convolve_row_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t LevelOfFee
       /* Compute buffer sizes */
       inp0Size = numOfOutputChKerBuf * pitchA * numGroupsPerKernel;
       inp1Size = numInChannels * inChOffset * numGroupsPerKernel * numBytes;
-      outSize = numOutChannels * numGroupsPerKernel * pitchC * (totalN / subN);
-
-      /* Allocate buffers for each test vector */
-      MMALIB_DEBUGPRINTFN(1,
-                          "pitchA %d, inChOffset %d, pitchC %d, inp0Size %d, inp1Size %d, outSize %d numGroupsPerKernel %d\n",
-                          pitchA, inChOffset, pitchC, inp0Size, inp1Size, outSize, numGroupsPerKernel);
-
-      MMALIB_DEBUGPRINTFN(1, "numOfOutputChKerBuf %d, numInChannels %d, numOutChannels %d, totalN %d, subN %d\n",
-                          numOfOutputChKerBuf, numInChannels, numOutChannels, totalN, subN);
+      outSize = numOutChannels * numGroupsPerKernel * pitchC;
 
       MMALIB_bufParams2D_t src0_addr; // paramsWgt
       MMALIB_bufParams2D_t src1_addr; // input
@@ -300,15 +289,6 @@ int MMALIB_CNN_convolve_row_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t LevelOfFee
          /* Fill input arrays according to desired test pattern */
          if (kerInitArgs.weightReorderFlag == 1 && prm[tpi].staticKernel != NULL)
          {
-            // TI_fillBuffer(prm[tpi].testPattern,
-            //               (uint8_t)255,
-            //               src2,
-            //               prm[tpi].staticKernel,
-            //               numOutChannels * numBiasVals,
-            //               1,
-            //               numOutChannels * numBiasVals,
-            //               numBytes,
-            //               testPatternString);
                 
             // for debug          
             int8_t *src3 = (int8_t*)0x64860000;      
@@ -320,16 +300,11 @@ int MMALIB_CNN_convolve_row_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t LevelOfFee
             MMALIB_CNN_convolve_row_reorderWeights(src3, src0, src2, &src0_addr, &src2_addr, &reorderWeights, &kerInitArgs);
          }
          else
-         {
-            TI_fillBuffer(prm[tpi].testPattern,
-                          (uint8_t)255,
-                          src0,
-                          prm[tpi].staticKernel,
-                          kDim,
-                          numOfOutputChKerBuf * numGroupsPerKernel,
-                          pitchA,
-                          numBytes,
-                          testPatternString);
+         {      
+            int iter=0;
+            for(;iter<kDim;iter++){
+               src0[iter]=iter;
+            }
          }
 
          /* This for creating the predicate buffers */
@@ -358,26 +333,16 @@ int MMALIB_CNN_convolve_row_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t LevelOfFee
          int32_t iterN = 0;
          int32_t validOutputRows;
 
-         // subN is number of input pixels processed in one call and used to calcuate the starting address of feature map buffers
-         // total N is total number of input pixels to be processed for a entire feature map
-         // The test code is limited due memory available since there is no background data transfer
-         // Verify upto two or 3 calls to kernel
          if (currTestStatus == MMALIB_SUCCESS)
          {
             int8_t *src1_Iter = src1;
 
             kerExecInArgs.subMChannels = subMChannels;
 
-            // validColsInLast, validColsPerRowInlast, validRowsInlast should be kept same as validColsIn as in init phase.
-            // This parameter is only for cases when last call parameters are different than what is initialized.
-            kerExecInArgs.validColsIn = validColsInlast;
-            kerExecInArgs.validColsPerRowIn = validColsPerRowInlast;
+            kerExecInArgs.validColsIn = validColsIn;
+            kerExecInArgs.validColsPerRowIn = validColsPerRowIn;
             kerExecInArgs.validRowsIn = validRowsInlast;
             kerExecInArgs.pad = pad;
-
-            MMALIB_DEBUGPRINTFN(1, "src1_Iter %p dst_iter %p dst %p src0 %p\n", src1_Iter, dst_iter, dst, src0);
-            MMALIB_DEBUGPRINTFN(1, "subMChannels %d, validColsIn %d MCount %d NCount %d subN %d\n",
-                                 subMChannels, validColsIn, MCount, NCount, subN);
             
             long long startTsc=__TSC;
             TI_profile_start(TI_PROFILE_KERNEL_OPT);
