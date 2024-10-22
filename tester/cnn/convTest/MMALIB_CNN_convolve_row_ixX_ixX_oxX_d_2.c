@@ -77,7 +77,7 @@ int MMALIB_CNN_convolve_row_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t LevelOfFee
       int32_t inChOffset = prm[tpi].inChOffset;
       int32_t numInChannels = 1;//prm[tpi].numInChannels;
       int32_t numOutChannels = 1;//prm[tpi].numOutChannels;
-      int32_t numOfOutputChKerBuf = prm[tpi].numOfOutputChKerBuf;
+      int32_t numOfOutputChKerBuf = 1;//prm[tpi].numOfOutputChKerBuf;
       int32_t subMChannels = 1;//prm[tpi].subMChannels;
       int32_t kernelWidth = prm[tpi].kernelWidth;
       int32_t kernelHeight = prm[tpi].kernelHeight;
