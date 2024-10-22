@@ -402,17 +402,7 @@ int MMALIB_CNN_convolve_row_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t LevelOfFee
          if (currTestStatus == MMALIB_SUCCESS)
          {
             int8_t *src1_Iter = src1;
-            if (mode == MMALIB_SE_CIRCULAR)
-               src1_Iter = src1_Iter + circularOffset * numBytes;
 
-            if (MCount == MCounter * subMChannels)
-            {
-               kerExecInArgs.subMChannels = numOutChannels - MCount;
-            }
-            else
-            {
-               kerExecInArgs.subMChannels = subMChannels;
-            }
             kerExecInArgs.subMChannels = subMChannels;
 
             // validColsInLast, validColsPerRowInlast, validRowsInlast should be kept same as validColsIn as in init phase.
@@ -421,7 +411,6 @@ int MMALIB_CNN_convolve_row_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t LevelOfFee
             kerExecInArgs.validColsPerRowIn = validColsPerRowInlast;
             kerExecInArgs.validRowsIn = validRowsInlast;
             kerExecInArgs.pad = pad;
-            int8_t *dst_iter = dst;
 
             MMALIB_DEBUGPRINTFN(1, "src1_Iter %p dst_iter %p dst %p src0 %p\n", src1_Iter, dst_iter, dst, src0);
             MMALIB_DEBUGPRINTFN(1, "subMChannels %d, validColsIn %d MCount %d NCount %d subN %d\n",
@@ -442,7 +431,7 @@ int MMALIB_CNN_convolve_row_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t LevelOfFee
             TI_profile_start(TI_PROFILE_KERNEL_OPT);
             MMALIB_asm(" MARK 2");
             currTestStatus = MMALIB_CNN_convolve_row_ixX_ixX_oxX_exec (
-                  handle, src0, src1_Iter, dst_iter, &kerExecInArgs, &kerExecOutArgs);
+                  handle, src0, src1, dst, &kerExecInArgs, &kerExecOutArgs);
             MMALIB_asm(" MARK 3");
             TI_profile_stop();                  
             long long endTsc=__TSC;
