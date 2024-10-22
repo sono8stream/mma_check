@@ -405,55 +405,50 @@ int MMALIB_CNN_convolve_row_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t LevelOfFee
             if (mode == MMALIB_SE_CIRCULAR)
                src1_Iter = src1_Iter + circularOffset * numBytes;
 
-            // MCount iterates over number of output channels to be processed in a given kernel call
-            // subMChannels are processed in one kernel call and numOutChannels is total output channels
-            // For memory restrictions not all channels can fit in L2 memory
-            for (MCount = 0; MCount < numOutChannels; MCount += subMChannels)
+            if (MCount == MCounter * subMChannels)
             {
-               if (MCount == MCounter * subMChannels)
-               {
-                  kerExecInArgs.subMChannels = numOutChannels - MCount;
-               }
-               else
-               {
-                  kerExecInArgs.subMChannels = subMChannels;
-               }
-
-               // validColsInLast, validColsPerRowInlast, validRowsInlast should be kept same as validColsIn as in init phase.
-               // This parameter is only for cases when last call parameters are different than what is initialized.
-               kerExecInArgs.validColsIn = validColsInlast;
-               kerExecInArgs.validColsPerRowIn = validColsPerRowInlast;
-               kerExecInArgs.validRowsIn = validRowsInlast;
-               kerExecInArgs.pad = pad;
-               int8_t *dst_iter = dst + MCount * pitchC + numOutChannels * iterN * pitchC;
-
-               MMALIB_DEBUGPRINTFN(1, "src1_Iter %p dst_iter %p dst %p src0 %p\n", src1_Iter, dst_iter, dst, src0);
-               MMALIB_DEBUGPRINTFN(1, "subMChannels %d, validColsIn %d MCount %d NCount %d subN %d\n",
-                                    subMChannels, validColsIn, MCount, NCount, subN);
-               
-               // for debug
-               int iter=0;
-               for(;iter<kDim;iter++){
-                  src0[iter]=1;
-               }
-
-               iter=0;
-               for(;iter<validColsIn;iter++){
-                  src1[iter]=iter%10;
-               }
-               
-               long long startTsc=__TSC;
-               TI_profile_start(TI_PROFILE_KERNEL_OPT);
-               MMALIB_asm(" MARK 2");
-               currTestStatus = MMALIB_CNN_convolve_row_ixX_ixX_oxX_exec (
-                     handle, src0, src1_Iter, dst_iter, &kerExecInArgs, &kerExecOutArgs);
-               MMALIB_asm(" MARK 3");
-               TI_profile_stop();                  
-               long long endTsc=__TSC;
-               long long elapsed=endTsc-startTsc;
-               validColsOut = kerExecOutArgs.validColsOut;
-               validColsPerRow = kerExecOutArgs.validColsPerRowOut;
+               kerExecInArgs.subMChannels = numOutChannels - MCount;
             }
+            else
+            {
+               kerExecInArgs.subMChannels = subMChannels;
+            }
+            kerExecInArgs.subMChannels = subMChannels;
+
+            // validColsInLast, validColsPerRowInlast, validRowsInlast should be kept same as validColsIn as in init phase.
+            // This parameter is only for cases when last call parameters are different than what is initialized.
+            kerExecInArgs.validColsIn = validColsInlast;
+            kerExecInArgs.validColsPerRowIn = validColsPerRowInlast;
+            kerExecInArgs.validRowsIn = validRowsInlast;
+            kerExecInArgs.pad = pad;
+            int8_t *dst_iter = dst;
+
+            MMALIB_DEBUGPRINTFN(1, "src1_Iter %p dst_iter %p dst %p src0 %p\n", src1_Iter, dst_iter, dst, src0);
+            MMALIB_DEBUGPRINTFN(1, "subMChannels %d, validColsIn %d MCount %d NCount %d subN %d\n",
+                                 subMChannels, validColsIn, MCount, NCount, subN);
+            
+            // for debug
+            int iter=0;
+            for(;iter<kDim;iter++){
+               src0[iter]=1;
+            }
+
+            iter=0;
+            for(;iter<validColsIn;iter++){
+               src1[iter]=iter%10;
+            }
+            
+            long long startTsc=__TSC;
+            TI_profile_start(TI_PROFILE_KERNEL_OPT);
+            MMALIB_asm(" MARK 2");
+            currTestStatus = MMALIB_CNN_convolve_row_ixX_ixX_oxX_exec (
+                  handle, src0, src1_Iter, dst_iter, &kerExecInArgs, &kerExecOutArgs);
+            MMALIB_asm(" MARK 3");
+            TI_profile_stop();                  
+            long long endTsc=__TSC;
+            long long elapsed=endTsc-startTsc;
+            validColsOut = kerExecOutArgs.validColsOut;
+            validColsPerRow = kerExecOutArgs.validColsPerRowOut;
 
             MMALIB_DEBUGPRINTFN(1, "OptC: valid cols out %d itenN %d\n", kerExecOutArgs.validColsOut, iterN);
             iterN++;
