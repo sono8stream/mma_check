@@ -94,7 +94,7 @@ int MMALIB_CNN_convolve_row_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t LevelOfFee
       uint8_t dataTypeC = prm[tpi].dataTypeC;
       uint8_t activationType = prm[tpi].activationType;
       int32_t pad = prm[tpi].pad;
-      int32_t shift = prm[tpi].qShift;
+      int32_t shift = 0;
       int32_t bias = prm[tpi].biasB;
       int32_t expectedStatusCode = prm[tpi].expectedStatusCode;
       uint8_t mode = prm[tpi].mode;
@@ -434,17 +434,24 @@ int MMALIB_CNN_convolve_row_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t LevelOfFee
                                       subMChannels, validColsIn, MCount, NCount, subN);
                   
                   // for debug
-                  int iter=9;
+                  int iter=0;
                   for(;iter<kDim;iter++){
-                     src0[iter]=0;
+                     src0[iter]=1;
+                  }
+
+                  iter=0;
+                  for(;iter<validColsIn;iter++){
+                     src1[iter]=iter%10;
                   }
                   
+                  long long startTsc=__TSC;
                   TI_profile_start(TI_PROFILE_KERNEL_OPT);
                   MMALIB_asm(" MARK 2");
                   currTestStatus = MMALIB_CNN_convolve_row_ixX_ixX_oxX_exec (
                       handle, src0, src1_Iter, dst_iter, &kerExecInArgs, &kerExecOutArgs);
                   MMALIB_asm(" MARK 3");
-                  TI_profile_stop();
+                  TI_profile_stop();                  
+                  long long endTsc=__TSC;
                   validColsOut = kerExecOutArgs.validColsOut;
                   validColsPerRow = kerExecOutArgs.validColsPerRowOut;
                }
