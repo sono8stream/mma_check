@@ -72,18 +72,22 @@ int MMALIB_CNN_convolve_row_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t LevelOfFee
 
       uint32_t inp0Size, inp1Size, outSize;
 
-      int32_t inWidth = prm[tpi].inWidth;
-      int32_t inputBlockWidth = inWidth + prm[tpi].pad;
-      int32_t inChOffset = prm[tpi].inChOffset;
+      int kernelSize=3;
+      int inWidth=256;
+      int height=1;
+      int pad=kernelSize/2;
+      int validColsIn=(inWidth+pad)*(height+pad*2)+pad;
+      int inChOffset=(validColsIn+63)/64*64;
+
+      int32_t inputBlockWidth = inWidth + pad;
       int32_t numInChannels = 1;//prm[tpi].numInChannels;
       int32_t numOutChannels = 1;//prm[tpi].numOutChannels;
       int32_t numOfOutputChKerBuf = 1;//prm[tpi].numOfOutputChKerBuf;
       int32_t subMChannels = 1;//prm[tpi].subMChannels;
-      int32_t kernelWidth = prm[tpi].kernelWidth;
-      int32_t kernelHeight = prm[tpi].kernelHeight;
+      int32_t kernelWidth = kernelSize;
+      int32_t kernelHeight = kernelSize;
       int32_t dilationWidth = prm[tpi].dilationWidth;
       int32_t dilationHeight = prm[tpi].dilationHeight;
-      int32_t validColsIn = prm[tpi].validColsIn;
       int32_t strideWidth = prm[tpi].strideWidth;
       int32_t strideHeight = prm[tpi].strideHeight;
       int32_t kDim = 9;//prm[tpi].kDim;
@@ -93,7 +97,6 @@ int MMALIB_CNN_convolve_row_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t LevelOfFee
       uint8_t dataTypeB = prm[tpi].dataTypeB;
       uint8_t dataTypeC = prm[tpi].dataTypeC;
       uint8_t activationType = prm[tpi].activationType;
-      int32_t pad = prm[tpi].pad;
       int32_t shift = 0;
       int32_t bias = prm[tpi].biasB;
       int32_t expectedStatusCode = prm[tpi].expectedStatusCode;
