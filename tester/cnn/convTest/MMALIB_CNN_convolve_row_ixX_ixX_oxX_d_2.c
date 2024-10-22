@@ -269,68 +269,26 @@ int MMALIB_CNN_convolve_row_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t LevelOfFee
          weightBufferSize = 0;
       }
 
-      int8_t *src0 = NULL;
+      int8_t *src0 = (int8_t*)0x64810000;
 
-      if (kerInitArgs.weightReorderFlag == 0)
-      {
-         src0 = (int8_t *)TI_memalign(numBytes * MMA_SIZE, inp0Size);
-      }
-      else
-      {
-         src0 = (int8_t *)TI_memalign(numBytes * MMA_SIZE, weightBufferSize);
-      }
+      int8_t *src1 =  (int8_t*)0x64820000;
 
-      int8_t *src1 = NULL;
-      if (mode == MMALIB_LINEAR)
-      {
-         src1 = (int8_t *)TI_memalign(MMA_SIZE * numBytes, inp1Size);
-      }
-      else if (mode == MMALIB_SE_CIRCULAR)
-      {
-         src1 = (int8_t *)TI_memalign(inChOffset * numBytes, inp1Size);
-      }
-
-      int8_t *dst = NULL;
-      if (prm[tpi].outputDataLocation == MMALIB_TEST_OUTPUT_HEAP)
-         dst = (int8_t *)TI_memalign(MMALIB_ALIGN_128BYTES, outSize);
-      else if (prm[tpi].outputDataLocation == MMALIB_TEST_OUTPUT_MSMC)
-      {
-         dst = (int8_t *)msmcBuffer;
-      }
-      else
-         dst = (int8_t *)msmcBuffer;
+      int8_t *dst = (int8_t*)0x64840000;
 
       int32_t biasSize = numOutChannels * numBiasVals * numBytes;
-      int8_t *src2 = NULL;
-      src2 = (int8_t *)TI_memalign(biasSize, biasSize);
-
-#if !defined(PERFORMANCE_TEST) && !defined(COMPILER_TEST)
-      int8_t *dst_cn = NULL;
-      if (prm[tpi].outputDataLocation == MMALIB_TEST_OUTPUT_HEAP)
+      int8_t *src2 = (int8_t*)0x64850000;
+      
+      // for debug
       {
-         dst_cn = (int8_t *)malloc(outSize);
+         int iter=0;
+         for(;iter<validColsIn;iter++){
+            src1[iter]=iter%10;
+         }
       }
-      else
-      {
-         dst_cn = (int8_t *)ddrBuffer;
-      }
-#endif
-
-      int32_t MCount, NCount;
-
-      MMALIB_DEBUGPRINTFN(1, "MMALIB_DEBUGPRINT test_case %d  src1: %p  src0 %p dst %p \n",
-                          tpi, src1, src0, dst);
-#if !defined(PERFORMANCE_TEST) && !defined(COMPILER_TEST)
-      MMALIB_DEBUGPRINTFN(1, "MMALIB_DEBUGPRINT test_case %d  dst_cn %p\n", tpi, dst_cn);
-#endif
 
       /* Only run the test if the buffer allocations fit in the heap */
       if (src0 && src1 && dst)
       {
-
-         MMALIB_DEBUGPRINTFN(1, "MMALIB_DEBUGPRINT test_case %d  weightReorderFlag: %d  weightBufferSize %d \n",
-                             tpi, kerInitArgs.weightReorderFlag, weightBufferSize);
-
          /* Fill input arrays according to desired test pattern */
          if (kerInitArgs.weightReorderFlag == 1 && prm[tpi].staticKernel != NULL)
          {
@@ -358,16 +316,6 @@ int MMALIB_CNN_convolve_row_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t LevelOfFee
                           numBytes,
                           testPatternString);
          }
-         // Fill Input buffer
-         TI_fillBuffer(prm[tpi].testPattern,
-                       (uint8_t)255,
-                       src1,
-                       prm[tpi].staticIn,
-                       inChOffset,
-                       numInChannels * numGroupsPerKernel,
-                       inChOffset * numBytes,
-                       numBytes,
-                       testPatternString);
 
          /* This for creating the predicate buffers */
          int32_t totalBytes;
@@ -420,11 +368,6 @@ int MMALIB_CNN_convolve_row_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t LevelOfFee
             int iter=0;
             for(;iter<kDim;iter++){
                src0[iter]=1;
-            }
-
-            iter=0;
-            for(;iter<validColsIn;iter++){
-               src1[iter]=iter%10;
             }
             
             long long startTsc=__TSC;
