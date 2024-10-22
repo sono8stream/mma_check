@@ -87,7 +87,7 @@ int MMALIB_CNN_convolve_row_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t LevelOfFee
       int32_t strideWidth = prm[tpi].strideWidth;
       int32_t strideHeight = prm[tpi].strideHeight;
       int32_t kDim = 9;//prm[tpi].kDim;
-      int32_t pitchA = prm[tpi].pitchA;
+      int32_t pitchA = 64;
       int32_t pitchC = prm[tpi].pitchC;
       uint8_t dataTypeA = prm[tpi].dataTypeA;
       uint8_t dataTypeB = prm[tpi].dataTypeB;
@@ -452,6 +452,7 @@ int MMALIB_CNN_convolve_row_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t LevelOfFee
                   MMALIB_asm(" MARK 3");
                   TI_profile_stop();                  
                   long long endTsc=__TSC;
+                  long long elapsed=endTsc-startTsc;
                   validColsOut = kerExecOutArgs.validColsOut;
                   validColsPerRow = kerExecOutArgs.validColsPerRowOut;
                }
