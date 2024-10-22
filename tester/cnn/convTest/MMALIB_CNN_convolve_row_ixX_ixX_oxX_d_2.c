@@ -78,6 +78,7 @@ int MMALIB_CNN_convolve_row_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t LevelOfFee
       int pad=kernelSize/2;
       int validColsIn=(inWidth+pad)*(height+pad*2)+pad;
       int inChOffset=(validColsIn+63)/64*64;
+      int maxHeight=height+pad*2+1;
 
       int32_t inputBlockWidth = inWidth + pad;
       int32_t numInChannels = 1;//prm[tpi].numInChannels;
@@ -102,7 +103,6 @@ int MMALIB_CNN_convolve_row_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t LevelOfFee
       int32_t expectedStatusCode = prm[tpi].expectedStatusCode;
       uint8_t mode = prm[tpi].mode;
       int32_t circularOffset = prm[tpi].circularOffset;
-      int32_t maxHeight = prm[tpi].maxHeight;
       int32_t totalN = prm[tpi].totalN;
       int32_t subN = prm[tpi].subN;
       int32_t validColsPerRowIn = prm[tpi].validColsPerRowIn;
