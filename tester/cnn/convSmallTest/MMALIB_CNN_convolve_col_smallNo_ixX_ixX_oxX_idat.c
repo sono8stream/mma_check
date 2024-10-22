@@ -83,7 +83,7 @@ static MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_testParams_t testParams[] =
       1,                       // numInChannels
       1,                       // numOutChannels
       1,                       // numGroupsPerKernel
-      4,                       // qShift
+      0,                       // qShift
       MMALIB_CONVOLVE_COL_SHIFT_SINGLE,// shiftMethod
       MMALIB_SUCCESS,          // expectedStatus
       1,                       // biasB

@@ -30,14 +30,14 @@ void mmaConv(){
 
     int kernelWidth = 3;
     int kernelHeight = 3;
-    int numBiasVals = kDim - kernelWidth*kernelHeight*numInChannels;// ¡‰ñ‚Íƒ[ƒB
+    int numBiasVals = kDim - kernelWidth*kernelHeight*numInChannels;// ï¿½ï¿½ï¿½ï¿½Íƒ[ï¿½ï¿½ï¿½B
     int numBytes = 1;
 
     MMALIB_bufParams2D_t biasBuffer;
     biasBuffer.dim_x = numBiasVals;// numBiasVals
     biasBuffer.dim_y = numOutChannels;// numOutChannels
-    biasBuffer.stride_y = numBiasVals * numBytes;// ¡‰ñ‚Íƒ[ƒB
-    biasBuffer.data_type = MMALIB_INT8;// ƒJ[ƒlƒ‹‚Æ“¯‚¶ƒf[ƒ^Œ^B
+    biasBuffer.stride_y = numBiasVals * numBytes;// ï¿½ï¿½ï¿½ï¿½Íƒ[ï¿½ï¿½ï¿½B
+    biasBuffer.data_type = MMALIB_INT8;// ï¿½Jï¿½[ï¿½lï¿½ï¿½ï¿½Æ“ï¿½ï¿½ï¿½ï¿½fï¿½[ï¿½^ï¿½^ï¿½B
 
     int outSize = 63990;//63488;// validColsOut(256) * 2 + align
 
@@ -120,7 +120,7 @@ void mmaConv(){
         kernel[i] = 1;
     }
 
-    int8_t* src = (int8_t*)malloc(inSize);// padding‚ğl—¶‚É“ü‚ê‚ÄƒTƒCƒY‚ğŠm•Û‚·‚é
+    int8_t* src = (int8_t*)malloc(inSize);// paddingï¿½ï¿½ï¿½lï¿½ï¿½ï¿½É“ï¿½ï¿½ï¿½ÄƒTï¿½Cï¿½Yï¿½ï¿½ï¿½mï¿½Û‚ï¿½ï¿½ï¿½
     for(int i=0;i<inSize;i++){
         src[i]=i%10;
     }
@@ -165,17 +165,17 @@ void mmaConvFullSpeed(){
     int shellSize=kernelLength/2;
     int pad=shellSize;
 
-    //G‚É256*10s‚É3x3Convolution‚â‚Á‚Ä‚İ‚éB
+    //ï¿½Gï¿½ï¿½256*10ï¿½sï¿½ï¿½3x3Convolutionï¿½ï¿½ï¿½ï¿½Ä‚İ‚ï¿½B
     int inSize = w*h+w*pad*2+h*pad+pad*pad*2+shellSize;
     int outSize = (w+pad)*(h+pad*2-shellSize*2);
 
-    // ƒf[ƒ^‚ğL2‚É’u‚¢‚Ä‚İ‚éB
+    // ï¿½fï¿½[ï¿½^ï¿½ï¿½L2ï¿½É’uï¿½ï¿½ï¿½Ä‚İ‚ï¿½B
     int8_t* kernel = (int8_t*)0x64810000;
     for(int i=0;i<kernelLength*kernelLength;i++){
         kernel[i] = 1;
     }
 
-    int8_t* src = (int8_t*)0x64820000;// padding‚ğl—¶‚É“ü‚ê‚ÄƒTƒCƒY‚ğŠm•Û‚·‚é
+    int8_t* src = (int8_t*)0x64820000;// paddingï¿½ï¿½ï¿½lï¿½ï¿½ï¿½É“ï¿½ï¿½ï¿½ÄƒTï¿½Cï¿½Yï¿½ï¿½ï¿½mï¿½Û‚ï¿½ï¿½ï¿½
     for(int i=0;i<inSize;i++){
         src[i]=i%10;
     }
@@ -183,6 +183,20 @@ void mmaConvFullSpeed(){
     int8_t* dst = (int8_t*)0x64840000;
     for(int i=0;i<outSize;i++){
         dst[i]=0;
+    }
+
+    for(int i=0;i<inSize;i++){
+        int x=i%(w+pad);
+        int y=i/(w+pad);
+        if(y-pad>=h){
+            x+=w+pad;
+        }
+
+        if(x==0){
+            printf("\n");
+        }
+
+        printf("%d ",src[i]);
     }
 
     long long times[10];
@@ -206,14 +220,14 @@ void mmaConvFullSpeed(){
     srcBuffer.stride_y = inSize;// inChOffset
     srcBuffer.data_type = MMALIB_UINT8;
 
-    int numBiasVals = kDim - kernelLength*kernelLength*numInChannels;// ¡‰ñ‚Íƒ[ƒ‚Ì‚Í‚¸B
+    int numBiasVals = kDim - kernelLength*kernelLength*numInChannels;// ï¿½ï¿½ï¿½ï¿½Íƒ[ï¿½ï¿½ï¿½Ì‚Í‚ï¿½ï¿½B
     int numBytes = 1;
 
     MMALIB_bufParams2D_t biasBuffer;
     biasBuffer.dim_x = numBiasVals;// numBiasVals
     biasBuffer.dim_y = numOutChannels;// numOutChannels
-    biasBuffer.stride_y = numBiasVals * numBytes;// ¡‰ñ‚Íƒ[ƒB
-    biasBuffer.data_type = MMALIB_INT8;// ƒJ[ƒlƒ‹‚Æ“¯‚¶ƒf[ƒ^Œ^B
+    biasBuffer.stride_y = numBiasVals * numBytes;// ï¿½ï¿½ï¿½ï¿½Íƒ[ï¿½ï¿½ï¿½B
+    biasBuffer.data_type = MMALIB_INT8;// ï¿½Jï¿½[ï¿½lï¿½ï¿½ï¿½Æ“ï¿½ï¿½ï¿½ï¿½fï¿½[ï¿½^ï¿½^ï¿½B
 
     MMALIB_bufParams3D_t dstBuffer;
     dstBuffer.dim_x = outSize;// pitchC/numBytes
@@ -233,7 +247,7 @@ void mmaConvFullSpeed(){
     int maxHeight = 10;
 
     MMALIB_CNN_convolve_row_ixX_ixX_oxX_InitArgs initArgs;
-    initArgs.funcStyle = MMALIB_FUNCTION_OPTIMIZED;//MMALIB_FUNCTION_NATC;//
+    initArgs.funcStyle = MMALIB_FUNCTION_NATC;//MMALIB_FUNCTION_OPTIMIZED;//
     initArgs.No = numOutChannels;
     initArgs.inChOffset = inSize;
     initArgs.validColsIn = validColsIn;

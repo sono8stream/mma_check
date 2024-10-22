@@ -43,7 +43,7 @@
 
 #include "MMALIB_CNN_convolve_row_ixX_ixX_oxX_idat.h"
 
-#define TEST_CASE 281
+#define TEST_CASE 13
 
 #if ((TEST_CASE == 13) || (TEST_CATEGORY == 1000))
 #include "test_data/MMALIB_CNN_convolve_row_ixX_ixX_oxX_idat_testcase13.h"
@@ -110,8 +110,8 @@ static convolve_row_ixX_ixX_oxX_testParams_t testParams[] =
       64,                       //subMChannels     
       256,                      //numInChannels    
       64,                       //numOutChannels   
-      14,                       //qShift           
-      20,                       //biasB     
+      9,//14,                       //qShift
+      25,//20,                       //biasB
       MMALIB_SUCCESS, //expectedStatusCode            
       MMALIB_RELU,              //activationType   
       MMALIB_INT8,              //dataTypeA        
@@ -391,11 +391,11 @@ static convolve_row_ixX_ixX_oxX_testParams_t testParams[] =
       1600,                     //pitchA
       64,                       //numOfOutputChKerBuf
       576,                      //pitchC 
-      64,                       //subMChannels     
-      32,                       //numInChannels    
-      64,                       //numOutChannels   
-      12,                       //qShift           
-      20,                       //biasB     
+      1,//64,                       //subMChannels
+      1,//32,                       //numInChannels
+      1,//64,                       //numOutChannels
+      1,//12,                       //qShift
+      0,//20,                       //biasB
       MMALIB_SUCCESS, //expectedStatusCode            
       MMALIB_RELU,              //activationType   
       MMALIB_INT8,              //dataTypeA        
@@ -717,11 +717,11 @@ static convolve_row_ixX_ixX_oxX_testParams_t testParams[] =
       576,                      //pitchA
       128,                      //numOfOutputChKerBuf
       576,                      //pitchC 
-      128,                      //subMChannels     
-      512,                      //numInChannels    
-      256,                      //numOutChannels   
-      9,                        //qShift           
-      20,                       //biasB     
+      128,                      //subMChannels
+      512,                      //numInChannels
+      256,                      //numOutChannels
+      9,                        //qShift
+      20,                       //biasB
       MMALIB_SUCCESS, //expectedStatusCode            
       MMALIB_RELU,              //activationType   
       MMALIB_INT8,              //dataTypeA        

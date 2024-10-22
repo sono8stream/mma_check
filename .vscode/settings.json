@@ -1,0 +1,7 @@
+{
+  "files.associations": {
+    "*.js": "javascript",
+    "main,py": "python",
+    "xiosbase": "cpp"
+  }
+}

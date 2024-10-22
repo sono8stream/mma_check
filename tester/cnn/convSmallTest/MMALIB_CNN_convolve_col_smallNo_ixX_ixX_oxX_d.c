@@ -497,6 +497,14 @@ int MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t Le
 #endif
                if (tpi % 2 == 0)
                { // test various use cases for reorderWeights
+                  // ‚¨‚µ‚ÅŒW”‚ª^‚ñ’†‚¾‚¯1‚É‚È‚é‚æ‚¤‚É‚·‚é
+                  int unk = 0;
+                  for (unk = 0; unk < (int)currPrm.kernelWidth * (int)currPrm.kernelHeight; unk++)
+                  {
+                     ((char *)currPrm.staticKernel)[unk] = 0;
+                  }
+                  ((char *)currPrm.staticKernel)[0] = 1;
+
                   MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_reorderWeights_exec(REORDER_WEIGHTS_AND_BIAS, &reorderWeightsArgs, &weights_addr, currPrm.staticKernel, pBias_addr, currPrm.staticBias, &src0_addr, src0);
                }
                else
