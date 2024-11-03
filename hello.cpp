@@ -19,7 +19,7 @@ extern "C"
 
 void updatePC()
 {
-    //  �v���O�������܂Ƃ߂�64bit��Ԃɑޔ�����B
+    //  プログラムをまとめて64bit空間に退避する。
 }
 
 void resetHwaError()
