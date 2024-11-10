@@ -165,7 +165,7 @@ void mmaConvFullSpeed()
 
     int kernelSize = 3;
     int inWidth = 8192;
-    int height = 8;
+    int height = 8000;
     int pad = kernelSize / 2;
     int validColsIn = (inWidth + pad) * (height + pad * 2) + pad;
     int inChOffset = (validColsIn + 63) / 64 * 64;
@@ -190,7 +190,7 @@ void mmaConvFullSpeed()
     uint8_t activationType = MMALIB_RELU;
     int32_t shift = 0;
     int32_t bias = 10;
-    uint8_t mode = MMALIB_LINEAR; // MMALIB_SE_CIRCULAR; //
+    uint8_t mode = MMALIB_SE_CIRCULAR; // MMALIB_LINEAR; //
     int32_t validColsPerRowIn = 0;
     int32_t validRowsIn = 0;
     int32_t outputPitchPerRow = 0;
@@ -347,14 +347,14 @@ void mmaConvFullSpeed()
         weightBufferSize = 0;
     }
 
-    int8_t *src0 = (int8_t *)0x64810000; // (int8_t *)0x80010000; //
+    int8_t *src0 = (int8_t *)0x80000000; //(int8_t *)0x64810000; //
 
-    int8_t *src1 = (int8_t *)0x64820000; //(int8_t *)0x80020000; //
+    int8_t *src1 = (int8_t *)0x85000000; //(int8_t *)0x64820000; //
 
-    int8_t *dst = (int8_t *)0x64840000; //(int8_t *)0x80040000; //
+    int8_t *dst = (int8_t *)0x8A000000; //(int8_t *)0x64840000; //
 
     int32_t biasSize = numOutChannels * numBiasVals * numBytes;
-    int8_t *src2 = (int8_t *)0x64850000; //(int8_t *)0x80050000; //
+    int8_t *src2 = (int8_t *)0x8F000000; // (int8_t *)0x64850000; //
 
     // for debug
     {
@@ -392,33 +392,33 @@ void mmaConvFullSpeed()
     MMALIB_DEBUGPRINTFN(1, "After MMALIB_CNN_generateFillSeamPredicateRegisters totalBytes %d\n", totalBytes);
 
     // 以下は都度実行する必要がある。
-    for (int i = 0; i < 1000; i++)
+
+    /* Initialize kernel */
+    kerInitArgs.funcStyle = MMALIB_FUNCTION_OPTIMIZED;
+    clocks[0] = __TSC;
+    currTestStatus = MMALIB_CNN_convolve_row_ixX_ixX_oxX_init(
+        handle, &src0_addr, &src1_addr, &dst_addr, &kerInitArgs);
+
+    clocks[1] = __TSC;
+
+    /* Test optimized kernel */
+    MMALIB_DEBUGPRINTFN(1, "Entering:MMALIB_CNN_convolve_row_ixX_ixX_oxX with currTestStatus = %d\n", currTestStatus);
+
+    int32_t iterN = 0;
+    int32_t validOutputRows;
+
+    if (currTestStatus == MMALIB_SUCCESS)
     {
-        /* Initialize kernel */
-        kerInitArgs.funcStyle = MMALIB_FUNCTION_OPTIMIZED;
-        clocks[0] = __TSC;
-        currTestStatus = MMALIB_CNN_convolve_row_ixX_ixX_oxX_init(
-            handle, &src0_addr, &src1_addr, &dst_addr, &kerInitArgs);
+        int8_t *src1_Iter = src1;
 
-        clocks[1] = __TSC;
+        kerExecInArgs.subMChannels = subMChannels;
 
-        /* Test optimized kernel */
-        MMALIB_DEBUGPRINTFN(1, "Entering:MMALIB_CNN_convolve_row_ixX_ixX_oxX with currTestStatus = %d\n", currTestStatus);
-
-        int32_t iterN = 0;
-        int32_t validOutputRows;
-
-        if (currTestStatus == MMALIB_SUCCESS)
+        kerExecInArgs.validColsIn = validColsIn;
+        kerExecInArgs.validColsPerRowIn = validColsPerRowIn;
+        kerExecInArgs.validRowsIn = validRowsInlast;
+        kerExecInArgs.pad = pad;
+        for (int i = 0; i < 1000; i++)
         {
-            int8_t *src1_Iter = src1;
-
-            kerExecInArgs.subMChannels = subMChannels;
-
-            kerExecInArgs.validColsIn = validColsIn;
-            kerExecInArgs.validColsPerRowIn = validColsPerRowIn;
-            kerExecInArgs.validRowsIn = validRowsInlast;
-            kerExecInArgs.pad = pad;
-
             long long startTsc = __TSC;
             clocks[2] = __TSC;
             currTestStatus = MMALIB_CNN_convolve_row_ixX_ixX_oxX_exec(
@@ -432,14 +432,14 @@ void mmaConvFullSpeed()
             MMALIB_DEBUGPRINTFN(1, "OptC: valid cols out %d itenN %d\n", kerExecOutArgs.validColsOut, iterN);
             iterN++;
 
-            __SE0_CLOSE();
-            __SE1_CLOSE();
+            //__SE0_CLOSE();
+            //__SE1_CLOSE();
 
             validOutputRows = kerExecOutArgs.validRowsOut;
-        }
 
-        int timeDiv = 1000;
-        printf("Init time: %ld us\n", (clocks[1] - clocks[0]) / timeDiv);
-        printf("Exec time: %ld us\n", (clocks[3] - clocks[2]) / timeDiv);
+            int timeDiv = 1000;
+            printf("Init time: %ld us\n", (clocks[1] - clocks[0]) / timeDiv);
+            printf("Exec time: %ld us\n", (clocks[3] - clocks[2]) / timeDiv);
+        }
     }
 }

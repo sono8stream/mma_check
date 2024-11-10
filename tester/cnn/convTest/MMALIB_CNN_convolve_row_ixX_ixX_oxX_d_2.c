@@ -400,7 +400,7 @@ int mainConv()
 
    MMALIB_TEST_init();
 
-   fail = test_main(&profile[0]);
+   //fail = test_main(&profile[0]);
 
 #if !defined(NO_PRINTF)
    if (fail == 0)

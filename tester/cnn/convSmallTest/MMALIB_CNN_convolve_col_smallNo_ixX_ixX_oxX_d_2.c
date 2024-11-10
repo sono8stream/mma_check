@@ -33,9 +33,9 @@
 #define TRUE 1
 #define FORCE_EVEN_GROUPS FALSE
 
-//__attribute__((section(".msmcData"), aligned(64))) int8_t msmcBuffer[MMALIB_L3_RESULTS_BUFFER_SIZE];
+__attribute__((section(".msmcData"), aligned(64))) int8_t msmcBuffer[MMALIB_L3_RESULTS_BUFFER_SIZE];
 
-//__attribute__((section(".ddrData"), aligned(64))) int8_t ddrBuffer[2048 * 1024];
+__attribute__((section(".ddrData"), aligned(64))) int8_t ddrBuffer[2048 * 1024];
 
 int16_t volatile volatileSum = 0; // use volatile to keep compiler from removing this operation, move to global to prevent compiler warning of unused variable
 
@@ -120,7 +120,6 @@ void MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_generateRandomKernels(void **pK
 
 int MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t LevelOfFeedback)
 {
-   return 0;
    int32_t tpi; /* test parameter index */
    int32_t currentTestFail;
    int32_t fail = 0; /* fail flag */
@@ -498,7 +497,7 @@ int MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t Le
 #endif
                if (tpi % 2 == 0)
                { // test various use cases for reorderWeights
-                  // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÅŒWï¿½ï¿½ï¿½ï¿½ï¿½^ï¿½ñ’†‚ï¿½ï¿½ï¿½1ï¿½É‚È‚ï¿½æ‚¤ï¿½É‚ï¿½ï¿½ï¿½
+                  // ‚¨‚µ‚ÅŒW”‚ª^‚ñ’†‚¾‚¯1‚É‚È‚é‚æ‚¤‚É‚·‚é
                   int unk = 0;
                   for (unk = 0; unk < (int)currPrm.kernelWidth * (int)currPrm.kernelHeight; unk++)
                   {

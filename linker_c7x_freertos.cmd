@@ -68,14 +68,14 @@
 --cinit_compression=off
 -e _c_int00
 
-// ‚¨ŽŽ‚µ‚Å64bit‘Î‰ž
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½64bitï¿½Î‰ï¿½
 #define DDR0_ALLOCATED_START  0x0A0000000//0xA0000000
 #define C7X_ALLOCATED_START DDR0_ALLOCATED_START + 0x08000000
 
 #define C7X_EXT_DATA_BASE   (C7X_ALLOCATED_START + 0x00100000)
 #define C7X_MEM_TEXT_BASE   (C7X_ALLOCATED_START + 0x00200000)
-#define C7X_MEM_DATA_BASE   (C7X_ALLOCATED_START + 0x00300000)
-#define C7X_DDR_SPACE_BASE  (C7X_ALLOCATED_START + 0x00400000)
+#define C7X_MEM_DATA_BASE   (C7X_ALLOCATED_START + 0x00400000)
+#define C7X_DDR_SPACE_BASE  (C7X_ALLOCATED_START + 0x00600000)
 
 MEMORY
 {
@@ -83,9 +83,9 @@ MEMORY
     DDR0_RESERVED: org = 0x80000000,          len = 0x20000000   /* 512MB Reserved for A72 OS */
     C7X_IPC_D:     org = C7X_ALLOCATED_START, len = 0x00100000   /*  1MB DDR */
     C7X_EXT_D:     org = C7X_EXT_DATA_BASE,   len = 0x00100000   /*  1MB DDR */
-    C7X_TEXT:      org = C7X_MEM_TEXT_BASE,   len = 0x00100000   /*  1MB DDR */
-    C7X_DATA:      org = C7X_MEM_DATA_BASE,   len = 0x00100000   /*  1MB DDR */
-    C7X_DDR_SPACE: org = C7X_DDR_SPACE_BASE,  len = 0x05000000   /* 12MB DDR */
+    C7X_TEXT:      org = C7X_MEM_TEXT_BASE,   len = 0x00200000   /*  2MB DDR */
+    C7X_DATA:      org = C7X_MEM_DATA_BASE,   len = 0x00200000   /*  1MB DDR */
+    C7X_DDR_SPACE: org = C7X_DDR_SPACE_BASE,  len = 0x0A000000   /* 160MB DDR */
     C7X_DDR_64:    org = 0x880000000,         len = 0x00100000   /*  1MB DDR */
 }
 
@@ -111,6 +111,9 @@ SECTIONS
     .const      >       C7X_DDR_SPACE
     .switch     >       C7X_DDR_SPACE /* For exception handling. */
     .sysmem     >       C7X_DDR_SPACE /* heap */
+    .staticData >       C7X_DDR_SPACE
+    .msmcData   >       C7X_DDR_SPACE
+    .ddrData   >       C7X_DDR_SPACE
 
     GROUP:              >  C7X_DDR_SPACE
     {

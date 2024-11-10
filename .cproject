@@ -218,7 +218,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="tester/cnn/convTest/MMALIB_CNN_convolve_row_ixX_ixX_oxX_d.c|tester/cnn/convSmallTest/MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_d.c|linker_c7x.cmd|linker_c7x_safertos.cmd" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="tester/cnn/convSmallTest/MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_d.c|tester/cnn/convTest/MMALIB_CNN_convolve_row_ixX_ixX_oxX_d_2.c|tester/cnn/convTest/MMALIB_CNN_convolve_row_ixX_ixX_oxX_d.c|linker_c7x.cmd|linker_c7x_safertos.cmd" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
