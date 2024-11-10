@@ -165,7 +165,7 @@ void mmaConvFullSpeed()
 
     int kernelSize = 3;
     int inWidth = 256;
-    int height = 1;
+    int height = 2;
     int pad = kernelSize / 2;
     int validColsIn = (inWidth + pad) * (height + pad * 2) + pad;
     int inChOffset = (validColsIn + 63) / 64 * 64;
@@ -184,7 +184,6 @@ void mmaConvFullSpeed()
     int32_t strideHeight = 1;
     int32_t kDim = 9;
     int32_t pitchA = 64;
-    int32_t pitchC = 320;
     uint8_t dataTypeA = MMALIB_INT8;
     uint8_t dataTypeB = MMALIB_UINT8;
     uint8_t dataTypeC = MMALIB_UINT8;
@@ -202,6 +201,34 @@ void mmaConvFullSpeed()
     int32_t numGroupsPerKernel = 1;
     int32_t MCounter = numOutChannels / subMChannels;
     MCounter = (numOutChannels % subMChannels == 0) ? MCounter - 1 : MCounter;
+
+    int32_t strideShiftW = 0;
+    if (strideWidth == 2)
+    {
+        strideShiftW = 1;
+    }
+    if (strideWidth == 4)
+    {
+        strideShiftW = 2;
+    }
+
+    int32_t strideShiftH = 0;
+    if (strideHeight == 2)
+    {
+        strideShiftH = 1;
+    }
+    if (strideHeight == 4)
+    {
+        strideShiftH = 2;
+    }
+
+    // validColsOut calculated for non strided convolution
+    int32_t validColsOut =
+        ((validColsIn - inputBlockWidth * (kernelHeight * dilationHeight - 1)) >>
+         strideShiftH) >>
+        strideShiftW;
+
+    int32_t pitchC = validColsOut;
 
     int32_t numBytes = 1;
     int32_t MMA_SIZE = MMALIB_MMA_SIZE_8_BIT;
@@ -229,31 +256,6 @@ void mmaConvFullSpeed()
     MMALIB_DEBUGPRINTFN(1, "\nAfter MMALIB_CNN Handle Size after %d\n", handleSize);
     handle = malloc(handleSize);
 
-    int32_t strideShiftW = 0;
-    if (strideWidth == 2)
-    {
-        strideShiftW = 1;
-    }
-    if (strideWidth == 4)
-    {
-        strideShiftW = 2;
-    }
-
-    int32_t strideShiftH = 0;
-    if (strideHeight == 2)
-    {
-        strideShiftH = 1;
-    }
-    if (strideHeight == 4)
-    {
-        strideShiftH = 2;
-    }
-
-    // validColsOut calculated for non strided convolution
-    int32_t validColsOut =
-        ((validColsIn - inputBlockWidth * (kernelHeight * dilationHeight - 1)) >>
-         strideShiftH) >>
-        strideShiftW;
     int32_t validColsPerRow = 0;
 
     MMALIB_bufParams2D_t src0_addr; // paramsWgt
