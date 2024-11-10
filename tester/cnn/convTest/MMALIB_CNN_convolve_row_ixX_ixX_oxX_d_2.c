@@ -72,26 +72,26 @@ int MMALIB_CNN_convolve_row_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t LevelOfFee
 
       uint32_t inp0Size, inp1Size, outSize;
 
-      int kernelSize=3;
-      int inWidth=256;
-      int height=1;
-      int pad=kernelSize/2;
-      int validColsIn=(inWidth+pad)*(height+pad*2)+pad;
-      int inChOffset=(validColsIn+63)/64*64;
-      int maxHeight=height+pad*2+1;
+      int kernelSize = 3;
+      int inWidth = 31;
+      int height = 21;
+      int pad = kernelSize / 2;
+      int validColsIn = (inWidth + pad) * (height + pad * 2) + pad;
+      int inChOffset = (validColsIn + 63) / 64 * 64;
+      int maxHeight = height + pad * 2 + 1;
 
       int32_t inputBlockWidth = inWidth + pad;
-      int32_t numInChannels = 1;//prm[tpi].numInChannels;
-      int32_t numOutChannels = 1;//prm[tpi].numOutChannels;
-      int32_t numOfOutputChKerBuf = 1;//prm[tpi].numOfOutputChKerBuf;
-      int32_t subMChannels = 1;//prm[tpi].subMChannels;
+      int32_t numInChannels = 1;       // prm[tpi].numInChannels;
+      int32_t numOutChannels = 1;      // prm[tpi].numOutChannels;
+      int32_t numOfOutputChKerBuf = 1; // prm[tpi].numOfOutputChKerBuf;
+      int32_t subMChannels = 1;        // prm[tpi].subMChannels;
       int32_t kernelWidth = kernelSize;
       int32_t kernelHeight = kernelSize;
       int32_t dilationWidth = 1;
       int32_t dilationHeight = 1;
       int32_t strideWidth = 1;
       int32_t strideHeight = 1;
-      int32_t kDim = 9;//prm[tpi].kDim;
+      int32_t kDim = 9; // prm[tpi].kDim;
       int32_t pitchA = 64;
       int32_t pitchC = 320;
       uint8_t dataTypeA = prm[tpi].dataTypeA;
@@ -261,25 +261,26 @@ int MMALIB_CNN_convolve_row_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t LevelOfFee
          weightBufferSize = 0;
       }
 
-      int8_t *src0 = (int8_t*)0x64810000;
+      int8_t *src0 = (int8_t *)0x64810000;
 
-      int8_t *src1 =  (int8_t*)0x64820000;
+      int8_t *src1 = (int8_t *)0x64820000;
 
-      int8_t *dst = (int8_t*)0x64840000;
+      int8_t *dst = (int8_t *)0x64840000;
 
       int32_t biasSize = numOutChannels * numBiasVals * numBytes;
-      int8_t *src2 = (int8_t*)0x64850000;
-      
+      int8_t *src2 = (int8_t *)0x64850000;
+
       // for debug
       {
-         int iter=0;
+         int iter = 0;
          // for(;iter<kDim;iter++){
          //    src0[iter]=iter;
          // }
-         
-         iter=0;
-         for(;iter<validColsIn;iter++){
-            src1[iter]=iter%10;
+
+         iter = 0;
+         for (; iter < validColsIn; iter++)
+         {
+            src1[iter] = iter % 10;
          }
       }
 
@@ -289,21 +290,23 @@ int MMALIB_CNN_convolve_row_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t LevelOfFee
          /* Fill input arrays according to desired test pattern */
          if (kerInitArgs.weightReorderFlag == 1 && prm[tpi].staticKernel != NULL)
          {
-                
-            // for debug          
-            int8_t *src3 = (int8_t*)0x64860000;      
-            int iter=0;
-            for(;iter<kDim;iter++){
-               src3[iter]=iter;
+
+            // for debug
+            int8_t *src3 = (int8_t *)0x64860000;
+            int iter = 0;
+            for (; iter < kDim; iter++)
+            {
+               src3[iter] = iter;
             }
 
             MMALIB_CNN_convolve_row_reorderWeights(src3, src0, src2, &src0_addr, &src2_addr, &reorderWeights, &kerInitArgs);
          }
          else
-         {      
-            int iter=0;
-            for(;iter<kDim;iter++){
-               src0[iter]=iter;
+         {
+            int iter = 0;
+            for (; iter < kDim; iter++)
+            {
+               src0[iter] = iter;
             }
          }
 
@@ -343,22 +346,22 @@ int MMALIB_CNN_convolve_row_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t LevelOfFee
             kerExecInArgs.validColsPerRowIn = validColsPerRowIn;
             kerExecInArgs.validRowsIn = validRowsInlast;
             kerExecInArgs.pad = pad;
-            
-            long long startTsc=__TSC;
+
+            long long startTsc = __TSC;
             TI_profile_start(TI_PROFILE_KERNEL_OPT);
             MMALIB_asm(" MARK 2");
-            currTestStatus = MMALIB_CNN_convolve_row_ixX_ixX_oxX_exec (
-                  handle, src0, src1, dst, &kerExecInArgs, &kerExecOutArgs);
+            currTestStatus = MMALIB_CNN_convolve_row_ixX_ixX_oxX_exec(
+                handle, src0, src1, dst, &kerExecInArgs, &kerExecOutArgs);
             MMALIB_asm(" MARK 3");
-            TI_profile_stop();                  
-            long long endTsc=__TSC;
-            long long elapsed=endTsc-startTsc;
+            TI_profile_stop();
+            long long endTsc = __TSC;
+            long long elapsed = endTsc - startTsc;
             validColsOut = kerExecOutArgs.validColsOut;
             validColsPerRow = kerExecOutArgs.validColsPerRowOut;
 
             MMALIB_DEBUGPRINTFN(1, "OptC: valid cols out %d itenN %d\n", kerExecOutArgs.validColsOut, iterN);
             iterN++;
-               
+
             __SE0_CLOSE();
             __SE1_CLOSE();
 
@@ -369,9 +372,9 @@ int MMALIB_CNN_convolve_row_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t LevelOfFee
 
    pProfile[3 * tpi] = (int32_t)TI_profile_get_cycles(TI_PROFILE_KERNEL_OPT);
    pProfile[3 * tpi + 1] =
-         (int32_t)TI_profile_get_cycles(TI_PROFILE_KERNEL_OPT_WARM);
+       (int32_t)TI_profile_get_cycles(TI_PROFILE_KERNEL_OPT_WARM);
    pProfile[3 * tpi + 2] =
-         (int32_t)TI_profile_get_cycles(TI_PROFILE_KERNEL_OPT_WARMWRB);
+       (int32_t)TI_profile_get_cycles(TI_PROFILE_KERNEL_OPT_WARMWRB);
 }
 
 int test_main(uint32_t *pProfile)

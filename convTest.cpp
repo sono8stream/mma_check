@@ -357,3 +357,285 @@ void mmaConvFullSpeed()
     printf("Exec args time: %ld us\n", (times[4] - times[3]) / timeDiv);
     printf("Exec time: %ld us\n", (times[5] - times[4]) / timeDiv);
 }
+
+void mmaConv2()
+{
+    // initialize status flags
+    MMALIB_STATUS currTestStatus = MMALIB_STATUS_NOT_SET; /* Test current testcase status */
+
+    long long clocks[10];
+
+    int kernelSize = 3;
+    int inWidth = 256;
+    int height = 1;
+    int pad = kernelSize / 2;
+    int validColsIn = (inWidth + pad) * (height + pad * 2) + pad;
+    int inChOffset = (validColsIn + 63) / 64 * 64;
+    int maxHeight = height + pad * 2 + 1;
+
+    int32_t inputBlockWidth = inWidth + pad;
+    int32_t numInChannels = 1;       // prm[tpi].numInChannels;
+    int32_t numOutChannels = 1;      // prm[tpi].numOutChannels;
+    int32_t numOfOutputChKerBuf = 1; // prm[tpi].numOfOutputChKerBuf;
+    int32_t subMChannels = 1;        // prm[tpi].subMChannels;
+    int32_t kernelWidth = kernelSize;
+    int32_t kernelHeight = kernelSize;
+    int32_t dilationWidth = 1;
+    int32_t dilationHeight = 1;
+    int32_t strideWidth = 1;
+    int32_t strideHeight = 1;
+    int32_t kDim = 9;
+    int32_t pitchA = 64;
+    int32_t pitchC = 320;
+    uint8_t dataTypeA = MMALIB_INT8;
+    uint8_t dataTypeB = MMALIB_UINT8;
+    uint8_t dataTypeC = MMALIB_UINT8;
+    uint8_t activationType = MMALIB_RELU;
+    int32_t shift = 0;
+    int32_t bias = 10;
+    uint8_t mode = MMALIB_LINEAR;
+    int32_t validColsPerRowIn = 0;
+    int32_t validRowsIn = 0;
+    int32_t outputPitchPerRow = 0;
+    int32_t inputPitchPerRow = 0;
+    int32_t validColsInlast = 0;
+    int32_t validRowsInlast = 0;
+    int32_t validColsPerRowInlast = 0;
+    int32_t numGroupsPerKernel = 1;
+    int32_t MCounter = numOutChannels / subMChannels;
+    MCounter = (numOutChannels % subMChannels == 0) ? MCounter - 1 : MCounter;
+
+    int32_t numBytes = 1;
+    int32_t MMA_SIZE = MMALIB_MMA_SIZE_8_BIT;
+
+    MMALIB_kernelHandle handle;
+    int32_t handleSize;
+
+    MMALIB_CNN_convolve_row_ixX_ixX_oxX_InitArgs kerInitArgs;
+    MMALIB_CNN_convolve_row_ixX_ixX_oxX_ExecInArgs kerExecInArgs;
+    MMALIB_CNN_convolve_row_ixX_ixX_oxX_ExecOutArgs kerExecOutArgs;
+
+    // Function returns the memory for the handle to be allocated
+    handleSize = MMALIB_CNN_convolve_row_ixX_ixX_oxX_getHandleSize(&kerInitArgs);
+    MMALIB_DEBUGPRINTFN(1, "\nAfter MMALIB_CNN Handle Size before %d\n", handleSize);
+
+    // Predicate buffer size is returned for allocating appropriate memory by application
+    int32_t defaultPredSize = MMALIB_CNN_seamPredicateRegistersSizeDefault();
+    int32_t actualPredSize = MMALIB_CNN_seamPredicateRegistersSize(inWidth, pad, maxHeight, MMA_SIZE, numOutChannels, subMChannels);
+
+    if (actualPredSize > defaultPredSize)
+    {
+        handleSize = handleSize + actualPredSize - defaultPredSize;
+    }
+
+    MMALIB_DEBUGPRINTFN(1, "\nAfter MMALIB_CNN Handle Size after %d\n", handleSize);
+    handle = malloc(handleSize);
+
+    int32_t strideShiftW = 0;
+    if (strideWidth == 2)
+    {
+        strideShiftW = 1;
+    }
+    if (strideWidth == 4)
+    {
+        strideShiftW = 2;
+    }
+
+    int32_t strideShiftH = 0;
+    if (strideHeight == 2)
+    {
+        strideShiftH = 1;
+    }
+    if (strideHeight == 4)
+    {
+        strideShiftH = 2;
+    }
+
+    // validColsOut calculated for non strided convolution
+    int32_t validColsOut =
+        ((validColsIn - inputBlockWidth * (kernelHeight * dilationHeight - 1)) >>
+         strideShiftH) >>
+        strideShiftW;
+    int32_t validColsPerRow = 0;
+
+    MMALIB_bufParams2D_t src0_addr; // paramsWgt
+    MMALIB_bufParams2D_t src1_addr; // input
+    MMALIB_bufParams2D_t src2_addr; // bias
+    MMALIB_bufParams3D_t dst_addr;
+    int32_t numBiasVals = kDim - kernelWidth * kernelHeight * numInChannels;
+
+    // カーネルバッファのアロケート
+    src0_addr.dim_x = kDim;
+    src0_addr.dim_y = numOfOutputChKerBuf * numGroupsPerKernel;
+    src0_addr.stride_y = pitchA;
+    src0_addr.data_type = dataTypeA;
+
+    // 入力バッファのアロケート
+    src1_addr.dim_x = inChOffset;
+    src1_addr.dim_y = numInChannels * numGroupsPerKernel;
+    src1_addr.stride_y = inChOffset;
+    src1_addr.data_type = dataTypeB;
+
+    // バイアスバッファのアロケート
+    src2_addr.dim_x = numBiasVals;
+    src2_addr.dim_y = numOutChannels;
+    src2_addr.stride_y = numBiasVals * numBytes;
+    src2_addr.data_type = dataTypeA;
+
+    // 出力バッファのアロケート
+    dst_addr.dim_x = pitchC / numBytes;
+    dst_addr.dim_y = numOutChannels;
+    dst_addr.stride_y = pitchC;
+    dst_addr.dim_z = numGroupsPerKernel;
+    dst_addr.stride_z = numOutChannels * pitchC; // numOutChannels*pitchC = pitchG
+    dst_addr.data_type = dataTypeC;
+
+    // 初期化用の処理
+    kerInitArgs.Fc = kernelWidth;
+    kerInitArgs.Fr = kernelHeight;
+    kerInitArgs.dilationX = dilationWidth;
+    kerInitArgs.dilationY = dilationHeight;
+    kerInitArgs.strideX = strideWidth;
+    kerInitArgs.strideY = strideHeight;
+    kerInitArgs.validColsIn = validColsIn;
+    kerInitArgs.subMChannels = subMChannels;
+    kerInitArgs.inWidth = inWidth;
+    kerInitArgs.pad = pad;
+    kerInitArgs.maxHeight = maxHeight;
+    kerInitArgs.inChOffset = inChOffset;
+    kerInitArgs.shift = shift;
+    kerInitArgs.No = numOutChannels;
+    kerInitArgs.bias = bias;
+    kerInitArgs.activationType = activationType;
+    kerInitArgs.mode = mode;
+    kerInitArgs.validColsPerRowIn = validColsPerRowIn;
+    kerInitArgs.validRowsIn = validRowsIn;
+    kerInitArgs.outputPitchPerRow = outputPitchPerRow;
+    kerInitArgs.inputPitchPerRow = inputPitchPerRow;
+    kerInitArgs.numGroupsPerKernel = numGroupsPerKernel;
+    kerInitArgs.numBiasVals = numBiasVals;
+
+    kerExecInArgs.bufferReset = 0;
+
+    MMALIB_CNN_convolve_row_ixX_ixX_oxX_reorderWeights_Args reorderWeights;
+
+    reorderWeights.dataType = src1_addr.data_type;
+    reorderWeights.Ni = src1_addr.dim_y;
+    reorderWeights.No = kerInitArgs.No;
+    reorderWeights.Fr = kerInitArgs.Fr;
+    reorderWeights.Fc = kerInitArgs.Fc;
+    reorderWeights.strideX = kerInitArgs.strideX;
+    reorderWeights.strideY = kerInitArgs.strideY;
+    reorderWeights.dilationX = kerInitArgs.dilationX;
+    reorderWeights.dilationY = kerInitArgs.dilationY;
+    reorderWeights.numBiasVals = kerInitArgs.numBiasVals;
+    reorderWeights.subMChannels = kerInitArgs.subMChannels;
+    reorderWeights.numGroupsPerKernel = kerInitArgs.numGroupsPerKernel;
+    reorderWeights.inWidth = kerInitArgs.inWidth;
+    reorderWeights.pad = kerInitArgs.pad;
+    reorderWeights.validColsIn = kerInitArgs.validColsIn;
+
+    kerInitArgs.weightReorderFlag = MMALIB_CNN_convolve_row_reorderWeightsFlag(&reorderWeights);
+
+    int32_t weightBufferSize;
+    if (kerInitArgs.weightReorderFlag == 1)
+    {
+        weightBufferSize = MMALIB_CNN_convolve_row_reorderWeightsBufferSize(&src0_addr, &reorderWeights, &kerInitArgs);
+    }
+    else
+    {
+        weightBufferSize = 0;
+    }
+
+    int8_t *src0 = (int8_t *)0x64810000;
+
+    int8_t *src1 = (int8_t *)0x64820000;
+
+    int8_t *dst = (int8_t *)0x64840000;
+
+    int32_t biasSize = numOutChannels * numBiasVals * numBytes;
+    int8_t *src2 = (int8_t *)0x64850000;
+
+    // for debug
+    {
+        int iter = 0;
+
+        iter = 0;
+        for (; iter < validColsIn; iter++)
+        {
+            src1[iter] = iter % 10;
+        }
+    }
+
+    /* Only run the test if the buffer allocations fit in the heap */
+    if (src0 && src1 && dst)
+    {
+        /* Fill input arrays according to desired test pattern */
+        if (kerInitArgs.weightReorderFlag == 1)
+        {
+            // for debug
+            int8_t *src3 = (int8_t *)0x64860000;
+            int iter = 0;
+            for (; iter < kDim; iter++)
+            {
+                src3[iter] = iter;
+            }
+
+            MMALIB_CNN_convolve_row_reorderWeights(src3, src0, src2, &src0_addr, &src2_addr, &reorderWeights, &kerInitArgs);
+        }
+
+        /* This for creating the predicate buffers */
+        int32_t totalBytes;
+        if (kerInitArgs.strideX == 1)
+        {
+            totalBytes = MMALIB_CNN_generateFillSeamPredicateRegisters(
+                handle, inWidth, pad, maxHeight, MMA_SIZE, numOutChannels, subMChannels);
+        }
+
+        MMALIB_DEBUGPRINTFN(1, "After MMALIB_CNN_generateFillSeamPredicateRegisters totalBytes %d\n", totalBytes);
+
+        /* Initialize kernel */
+        kerInitArgs.funcStyle = MMALIB_FUNCTION_OPTIMIZED;
+        clocks[0] = __TSC;
+        currTestStatus = MMALIB_CNN_convolve_row_ixX_ixX_oxX_init(
+            handle, &src0_addr, &src1_addr, &dst_addr, &kerInitArgs);
+
+        clocks[1] = __TSC;
+
+        /* Test optimized kernel */
+        MMALIB_DEBUGPRINTFN(1, "Entering:MMALIB_CNN_convolve_row_ixX_ixX_oxX with currTestStatus = %d\n", currTestStatus);
+
+        int32_t iterN = 0;
+        int32_t validOutputRows;
+
+        if (currTestStatus == MMALIB_SUCCESS)
+        {
+            int8_t *src1_Iter = src1;
+
+            kerExecInArgs.subMChannels = subMChannels;
+
+            kerExecInArgs.validColsIn = validColsIn;
+            kerExecInArgs.validColsPerRowIn = validColsPerRowIn;
+            kerExecInArgs.validRowsIn = validRowsInlast;
+            kerExecInArgs.pad = pad;
+
+            long long startTsc = __TSC;
+            clocks[2] = __TSC;
+            currTestStatus = MMALIB_CNN_convolve_row_ixX_ixX_oxX_exec(
+                handle, src0, src1, dst, &kerExecInArgs, &kerExecOutArgs);
+            clocks[3] = __TSC;
+            long long endTsc = __TSC;
+            long long elapsed = endTsc - startTsc;
+            validColsOut = kerExecOutArgs.validColsOut;
+            validColsPerRow = kerExecOutArgs.validColsPerRowOut;
+
+            MMALIB_DEBUGPRINTFN(1, "OptC: valid cols out %d itenN %d\n", kerExecOutArgs.validColsOut, iterN);
+            iterN++;
+
+            __SE0_CLOSE();
+            __SE1_CLOSE();
+
+            validOutputRows = kerExecOutArgs.validRowsOut;
+        }
+    }
+}

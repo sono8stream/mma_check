@@ -38,13 +38,15 @@ int main(void)
 
     resetHwaError();
 
+    mmaConv2();
+
     // mainConvSmall();
-    mainConv();
+    // mainConv();
 
     // MMALIB_TEST_init();
 
     // mmaLinalg();
-    mmaConvFullSpeed();
+    // mmaConvFullSpeed();
     // mmaDeconv();
 
     // seTestTranspose();
