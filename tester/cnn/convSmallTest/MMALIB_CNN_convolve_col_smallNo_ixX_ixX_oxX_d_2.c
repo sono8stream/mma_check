@@ -84,17 +84,19 @@ int MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t Le
       int32_t lr = 1024;
       int32_t strideX = 1;
       int32_t strideY = 1;
+      int32_t kernelWidth = 3;
+      int32_t kernelHeight = 3;
 
       kerInitArgs.Ni = 1;
       kerInitArgs.No = 1;
-      kerInitArgs.Fr = 3;
-      kerInitArgs.Fc = 3;
+      kerInitArgs.Fr = kernelHeight;
+      kerInitArgs.Fc = kernelWidth;
       kerInitArgs.strideX = strideX;
       kerInitArgs.strideY = strideY;
       kerInitArgs.dilationX = 1;
       kerInitArgs.dilationY = 1;
-      int32_t eFc = kerInitArgs.dilationX * (kerInitArgs.Fc - 1) + 1; // equivalent filter width for dilation
-      int32_t eFr = kerInitArgs.dilationY * (kerInitArgs.Fr - 1) + 1; // equivalent filter height for dilation
+      int32_t eFc = kerInitArgs.dilationX * (kernelWidth - 1) + 1;  // equivalent filter width for dilation
+      int32_t eFr = kerInitArgs.dilationY * (kernelHeight - 1) + 1; // equivalent filter height for dilation
       uint8_t dataTypeA = MMALIB_INT8;
       uint8_t dataTypeB = MMALIB_INT8;
       uint8_t dataTypeC = MMALIB_INT8;
@@ -208,20 +210,7 @@ int MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t Le
 
       int32_t *biasBValues = NULL;
 
-      void *dst;
-
-      if (currPrm.outputDataLocation == MMALIB_TEST_OUTPUT_HEAP)
-      {
-         dst = TI_memalign(MMALIB_ALIGN_128BYTES, outSize);
-      }
-      else if (currPrm.outputDataLocation == MMALIB_TEST_OUTPUT_MSMC)
-      {
-         dst = (void *)msmcBuffer;
-      }
-      else
-      {
-         dst = NULL;
-      }
+      void *dst = 0x64840000;
 
       uint32_t i;
       // initialize all kernel coefficient memory even if it won't be used to address valgrind warnings
@@ -234,32 +223,21 @@ int MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t Le
          ((uint8_t *)src1)[i] = 6;
       }
 
-      void *dst_cn = NULL;
-      if (currPrm.outputDataLocation == MMALIB_TEST_OUTPUT_HEAP)
-      {
-         dst_cn = TI_memalign(MMALIB_ALIGN_128BYTES, outSize);
-      }
-      else
-      {
-         dst_cn = (void *)ddrBuffer;
-      }
-
       /* Only run the test if the buffer allocations fit in the heap */
-      if (src0 && src1 && dst && dst_cn)
+      if (src0 && src1 && dst)
       {
          /* copy static test data into memory, or generate random test data */
          // copy/generate the filter coefficients
          reorderWeightsArgs.blockFeatureHeight = kerInitArgs.blockFeatureHeight;
 
-         if (tpi % 2 == 0)
+         uint8_t *kernel = 0x64810000;
+         int i;
+         for (i = 0; i < kernelHeight * kernelWidth; i++)
          {
-            MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_reorderWeights_exec(REORDER_WEIGHTS_AND_BIAS, &reorderWeightsArgs, &weights_addr, currPrm.staticKernel, pBias_addr, currPrm.staticBias, &src0_addr, src0);
+            kernel[i] = i;
          }
-         else
-         {
-            MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_reorderWeights_exec(REORDER_WEIGHTS, &reorderWeightsArgs, &weights_addr, currPrm.staticKernel, pBias_addr, currPrm.staticBias, &src0_addr, src0);
-            MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_reorderWeights_exec(REORDER_BIAS, &reorderWeightsArgs, &weights_addr, currPrm.staticKernel, pBias_addr, currPrm.staticBias, &src0_addr, src0);
-         }
+         MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_reorderWeights_exec(REORDER_WEIGHTS_AND_BIAS, &reorderWeightsArgs, &weights_addr, currPrm.staticKernel, pBias_addr, currPrm.staticBias, &src0_addr, src0);
+
          MMALIB_DEBUGPRINTFN(1, "currPrm.staticBias = %p\n", currPrm.staticBias);
 
          // copy/generate the input feature maps
@@ -403,23 +381,6 @@ int mainConvSmall()
    MMALIB_TEST_init();
 
    fail = test_main(&profile[0]);
-
-#if !defined(NO_PRINTF)
-   if (fail == 0)
-   {
-      printf("Test Pass!%s", "\n");
-   }
-   else
-   {
-      printf("Test Fail!%s", "\n");
-   }
-
-   int i;
-   for (i = 0; i < test_cases; i++)
-   {
-      printf("Test %4d: Cold Cycles = %8d, Warm Cycles = %8d, Warm Cycles WRB = %8d\n", i, profile[3 * i], profile[3 * i + 1], profile[3 * i + 2]);
-   }
-#endif // NO_PRINTF
 
    return fail;
 }
