@@ -80,36 +80,42 @@ int MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t Le
       // assumed to represent a number of extra rows in the memory storage of the input feature map
       int32_t gapRowsBetweenGroups = 0;
 
-      kerInitArgs.Ni = currPrm.numInChannels;
-      kerInitArgs.No = currPrm.numOutChannels;
-      kerInitArgs.Fr = currPrm.kernelWidth;
-      kerInitArgs.Fc = currPrm.kernelHeight;
-      kerInitArgs.strideX = currPrm.strideX;
-      kerInitArgs.strideY = currPrm.strideY;
-      kerInitArgs.dilationX = currPrm.dilationX;
-      kerInitArgs.dilationY = currPrm.dilationY;
+      int32_t lc = 64;
+      int32_t lr = 1024;
+      int32_t strideX = 1;
+      int32_t strideY = 1;
+
+      kerInitArgs.Ni = 1;
+      kerInitArgs.No = 1;
+      kerInitArgs.Fr = 3;
+      kerInitArgs.Fc = 3;
+      kerInitArgs.strideX = strideX;
+      kerInitArgs.strideY = strideY;
+      kerInitArgs.dilationX = 1;
+      kerInitArgs.dilationY = 1;
       int32_t eFc = kerInitArgs.dilationX * (kerInitArgs.Fc - 1) + 1; // equivalent filter width for dilation
       int32_t eFr = kerInitArgs.dilationY * (kerInitArgs.Fr - 1) + 1; // equivalent filter height for dilation
-      uint8_t dataTypeA = currPrm.dataTypeA;
-      uint8_t dataTypeB = currPrm.dataTypeB;
-      uint8_t dataTypeC = currPrm.dataTypeC;
-      kerInitArgs.activationType = currPrm.activationType;
-      kerInitArgs.shift = currPrm.qShift;
-      kerInitArgs.shiftMethod = currPrm.shiftMethod;
-      kerInitArgs.bias = currPrm.biasB;
+      uint8_t dataTypeA = MMALIB_INT8;
+      uint8_t dataTypeB = MMALIB_INT8;
+      uint8_t dataTypeC = MMALIB_INT8;
+      kerInitArgs.activationType = MMALIB_SATURATION;
+      kerInitArgs.shift = 4;
+      kerInitArgs.shiftMethod = MMALIB_CONVOLVE_COL_SHIFT_SINGLE;
+      kerInitArgs.bias = 1;
       kerInitArgs.biasDataType = dataTypeB;
-      kerInitArgs.numBiasVals = currPrm.numBiasVals;
-      kerInitArgs.featureWidth = currPrm.Lc;
-      kerInitArgs.blockFeatureHeight = currPrm.Lr;
+      kerInitArgs.numBiasVals = 1;
+      kerInitArgs.featureWidth = lc;
+      kerInitArgs.blockFeatureHeight = lr;
 
-      kerInitArgs.blockFeaturePitch = kerInitArgs.featureWidth * MMALIB_sizeof(dataTypeB) * kerInitArgs.Ni;
-      kerInitArgs.columnOffset = MMALIB_MMA_SIZE_8_BIT / MMALIB_sizeof(dataTypeB) * 2 * kerInitArgs.strideX; // should make this an idat.c parameter
-      kerInitArgs.inPairOffset = MMALIB_MMA_SIZE_8_BIT / MMALIB_sizeof(dataTypeB) * kerInitArgs.strideX;     // should make this an idat.c parameter
-      kerInitArgs.inChOffset = kerInitArgs.featureWidth;                                                     // temporary until it's implemented as an idat.c parameter
-      kerInitArgs.outPairOffset = MMALIB_MMA_SIZE_8_BIT / MMALIB_sizeof(dataTypeC);
-      kerInitArgs.numGroupsPerKernel = currPrm.numGroupsPerKernel;
-      int32_t Mr = MMALIB_ceilingDiv(currPrm.Lr - eFr + 1, currPrm.strideY);
-      int32_t Mc = MMALIB_ceilingDiv(currPrm.Lc - eFc + 1, currPrm.strideX);
+      kerInitArgs.blockFeaturePitch = kerInitArgs.featureWidth * kerInitArgs.Ni;
+      kerInitArgs.columnOffset = MMALIB_MMA_SIZE_8_BIT * 2 * kerInitArgs.strideX; // should make this an idat.c parameter
+      kerInitArgs.inPairOffset = MMALIB_MMA_SIZE_8_BIT * kerInitArgs.strideX;     // should make this an idat.c parameter
+      kerInitArgs.inChOffset = kerInitArgs.featureWidth;                          // temporary until it's implemented as an idat.c parameter
+      kerInitArgs.outPairOffset = MMALIB_MMA_SIZE_8_BIT;
+      kerInitArgs.numGroupsPerKernel = 1;
+      // 実際に計算する横幅・縦幅
+      int32_t Mc = MMALIB_ceilingDiv(lc - eFc + 1, strideX);
+      int32_t Mr = MMALIB_ceilingDiv(lr - eFr + 1, strideY);
 
       MMALIB_bufParams2D_t weights_addr; // filter coefficients in packed, natural order
       MMALIB_bufParams2D_t bias_addr;    // bias values in packed, natural order
