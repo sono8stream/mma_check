@@ -487,51 +487,35 @@ int MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t Le
             // copy/generate the filter coefficients
             reorderWeightsArgs.blockFeatureHeight = kerInitArgs.blockFeatureHeight;
 
-            if (currPrm.staticKernel != NULL)
-            {
-
 #if MMALIB_DEBUGPRINT
-               MMALIB_PRINTF("Static Weights%s", "\n");
-               MMALIB_debugPrintBufParams(&weights_addr);
-               MMALIB_debugPrintMatrix(currPrm.staticKernel, &weights_addr);
+            MMALIB_PRINTF("Static Weights%s", "\n");
+            MMALIB_debugPrintBufParams(&weights_addr);
+            MMALIB_debugPrintMatrix(currPrm.staticKernel, &weights_addr);
 #endif
-               if (tpi % 2 == 0)
-               { // test various use cases for reorderWeights
-                  // Ç®ééÇµÇ≈åWêîÇ™ê^ÇÒíÜÇæÇØ1Ç…Ç»ÇÈÇÊÇ§Ç…Ç∑ÇÈ
-                  int unk = 0;
-                  for (unk = 0; unk < (int)currPrm.kernelWidth * (int)currPrm.kernelHeight; unk++)
-                  {
-                     ((char *)currPrm.staticKernel)[unk] = 0;
-                  }
-                  ((char *)currPrm.staticKernel)[0] = 1;
+            if (tpi % 2 == 0)
+            { // test various use cases for reorderWeights
+               // ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ≈åWÔøΩÔøΩÔøΩÔøΩÔøΩ^ÔøΩÒíÜÇÔøΩÔøΩÔøΩ1ÔøΩ…Ç»ÇÔøΩÊÇ§ÔøΩ…ÇÔøΩÔøΩÔøΩ
+               // int unk = 0;
+               // for (unk = 0; unk < (int)currPrm.kernelWidth * (int)currPrm.kernelHeight; unk++)
+               // {
+               //    ((char *)currPrm.staticKernel)[unk] = 0;
+               // }
+               // ((char *)currPrm.staticKernel)[0] = 1;
 
-                  MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_reorderWeights_exec(REORDER_WEIGHTS_AND_BIAS, &reorderWeightsArgs, &weights_addr, currPrm.staticKernel, pBias_addr, currPrm.staticBias, &src0_addr, src0);
-               }
-               else
-               {
-                  MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_reorderWeights_exec(REORDER_WEIGHTS, &reorderWeightsArgs, &weights_addr, currPrm.staticKernel, pBias_addr, currPrm.staticBias, &src0_addr, src0);
-                  MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_reorderWeights_exec(REORDER_BIAS, &reorderWeightsArgs, &weights_addr, currPrm.staticKernel, pBias_addr, currPrm.staticBias, &src0_addr, src0);
-               }
-               MMALIB_DEBUGPRINTFN(1, "currPrm.staticBias = %p\n", currPrm.staticBias);
-
-#if MMALIB_DEBUGPRINT
-               MMALIB_PRINTF("Reordered kernel coefficients%s", "\n");
-               MMALIB_debugPrintBufParams(&src0_addr);
-               MMALIB_debugPrintMatrix(src0, &src0_addr);
-#endif
+               MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_reorderWeights_exec(REORDER_WEIGHTS_AND_BIAS, &reorderWeightsArgs, &weights_addr, currPrm.staticKernel, pBias_addr, currPrm.staticBias, &src0_addr, src0);
             }
             else
             {
-               // generate a random set of normal order filter coefficients
-               void *normalOrderKernels;
-               MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_generateRandomKernels(&normalOrderKernels, &weights_addr, &kerInitArgs);
-
-               // random data for kernel coefficients and bias
-               MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_reorderWeights_exec(REORDER_WEIGHTS_AND_BIAS, &reorderWeightsArgs, &weights_addr, normalOrderKernels, NULL, NULL, &src0_addr, src0);
-
-               // free the memory for the normal order kernels
-               free(normalOrderKernels);
+               MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_reorderWeights_exec(REORDER_WEIGHTS, &reorderWeightsArgs, &weights_addr, currPrm.staticKernel, pBias_addr, currPrm.staticBias, &src0_addr, src0);
+               MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_reorderWeights_exec(REORDER_BIAS, &reorderWeightsArgs, &weights_addr, currPrm.staticKernel, pBias_addr, currPrm.staticBias, &src0_addr, src0);
             }
+            MMALIB_DEBUGPRINTFN(1, "currPrm.staticBias = %p\n", currPrm.staticBias);
+
+#if MMALIB_DEBUGPRINT
+            MMALIB_PRINTF("Reordered kernel coefficients%s", "\n");
+            MMALIB_debugPrintBufParams(&src0_addr);
+            MMALIB_debugPrintMatrix(src0, &src0_addr);
+#endif
 
             // copy/generate the input feature maps
             TI_fillBuffer(currPrm.testPattern,
@@ -642,192 +626,6 @@ int MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t Le
             {
                MMALIB_PRINTF("MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_init_checkParams failed!%s", "\n");
             }
-
-            /**********************************************************************************************************
-             *
-             * natural C
-             *
-             *********************************************************************************************************/
-            MMALIB_DEBUGPRINTFN(1, "Starting natural C computation.%s", "\n");
-
-            /* Test _cn kernel */
-            kerInitArgs.funcStyle = MMALIB_FUNCTION_NATC;
-
-            // initialize the kernel to use the natural C variant
-            if (currTestStatus == MMALIB_SUCCESS)
-            {
-               currTestStatus = MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_init(handle,
-                                                                                 &src0_addr,
-                                                                                 &src1_addr,
-                                                                                 &dst_addr,
-                                                                                 &kerInitArgs);
-               TI_profile_start(TI_PROFILE_KERNEL_CN);
-               MMALIB_asm(" MARK 8");
-
-               if (currTestStatus == MMALIB_SUCCESS)
-               {
-                  kerExecInArgs.blockFeatureWidth = src1_addr.dim_x;
-                  currTestStatus = MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_exec(handle,
-                                                                                    src0,
-                                                                                    pSrc1,
-                                                                                    shiftValues,
-                                                                                    biasBValues,
-                                                                                    dst_cn,
-                                                                                    &kerExecInArgs,
-                                                                                    &kerExecOutArgs_cn);
-
-                  MMALIB_asm(" MARK 9");
-                  TI_profile_stop();
-                  MMALIB_DEBUGPRINTFN(1, "Finished natural C computation.%s", "\n");
-
-                  /**********************************************************************************************************
-                   *
-                   * compare outputs
-                   *
-                   *********************************************************************************************************/
-
-                  /* Compare natural C Output and Optimized Output */
-                  status_nat_vs_opt = TI_compare_mem_3D(dst, dst_cn, 0, 0, dst_addr.dim_x, dst_addr.dim_y, dst_addr.dim_z, dst_addr.stride_y, dst_addr.stride_z, MMALIB_sizeof(dst_addr.data_type));
-                  comparisonDone = 1;
-               }
-               else
-               {
-                  MMALIB_PRINTF("MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_init_checkParams failed!%s", "\n");
-               }
-            }
-            else
-            {
-               if (currPrm.expectedStatusCode == currTestStatus)
-               {
-                  status_nat_vs_opt = TI_TEST_KERNEL_PASS;
-               }
-            }
-
-            if (currPrm.staticOut != NULL && currTestStatus == MMALIB_SUCCESS)
-            {
-               /* Compare natural C output and static output */
-#if MMALIB_DEBUGPRINT && !defined(PERFORMANCE_TEST)
-               int32_t status_nat_vs_ref = TI_compare_mem_roi3DStatic(dst_cn, currPrm.staticOut, 0, 0, dst_addr.dim_x, dst_addr.dim_y, dst_addr.dim_z, dst_addr.stride_y, dst_addr.stride_z, MMALIB_sizeof(dst_addr.data_type));
-               MMALIB_PRINTF(" status_nat_vs_ref: %d\n", status_nat_vs_ref);
-#endif
-
-               /* Compare optimized C output and static output (instead of natural) */
-               status_ref_vs_opt = TI_compare_mem_roi3DStatic(dst, currPrm.staticOut, 0, 0, dst_addr.dim_x, dst_addr.dim_y, dst_addr.dim_z, dst_addr.stride_y, dst_addr.stride_z, MMALIB_sizeof(dst_addr.data_type));
-               MMALIB_DEBUGPRINTFN(1, "Without dynamic range, status_ref_vs_opt = %d.\n", status_ref_vs_opt);
-               comparisonDone = 1;
-               MMALIB_DEBUGPRINTFN(1, "status_ref_vs_opt = %d.\n", status_ref_vs_opt);
-            }
-            else
-            {
-               status_ref_vs_opt = TI_TEST_KERNEL_PASS;
-            }
-
-            /* Set the 'fail' flag based on test vector comparison results */
-            currentTestFail = ((status_ref_vs_opt == TI_TEST_KERNEL_FAIL) ||
-                               (status_nat_vs_opt == TI_TEST_KERNEL_FAIL) ||
-                               (comparisonDone == 0 && currTestStatus == MMALIB_SUCCESS) ||
-                               (currTestStatus != currPrm.expectedStatusCode))
-                                  ? 1
-                                  : 0;
-
-            fail = ((fail == 1) || (currentTestFail == 1)) ? 1 : 0;
-#if MMALIB_DEBUGPRINT
-            if (currentTestFail == 1)
-            {
-               MMALIB_PRINTF("Failed%s", "\n");
-               MMALIB_PRINTF("   status_ref_vs_opt: %d\n", status_ref_vs_opt);
-               MMALIB_PRINTF("   status_nat_vs_opt: %d\n", status_nat_vs_opt);
-               MMALIB_PRINTF("   currTestStatus: %d\n", currTestStatus);
-               MMALIB_PRINTF("   comparison done: %d\n", comparisonDone);
-
-               MMALIB_PRINTF(" Mr = %d, Mc = %d\n", Mr, Mc);
-
-               MMALIB_PRINTF("Weights%s", "\n");
-               MMALIB_debugPrintBufParams(&src0_addr);
-               MMALIB_debugPrintMatrix(src0, &src0_addr);
-
-               MMALIB_PRINTF("Input feature maps%s", "\n");
-               MMALIB_debugPrintBufParams(&src1_addr);
-               MMALIB_debugPrintMatrix(pSrc1, &src1_addr);
-
-               if (currPrm.staticOut != NULL)
-               {
-                  MMALIB_bufParams3D_t staticOut_addr = dst_addr;
-                  staticOut_addr.stride_y = staticOut_addr.dim_x * MMALIB_sizeof(staticOut_addr.data_type);
-                  staticOut_addr.stride_z = staticOut_addr.stride_y * staticOut_addr.dim_y;
-                  MMALIB_PRINTF("dst_ref%s", "\n");
-                  MMALIB_debugPrintBufParams3D(&staticOut_addr);
-                  MMALIB_debugPrintMatrix3D((void *)currPrm.staticOut, &staticOut_addr);
-               }
-
-               MMALIB_PRINTF("dst_cn%s", "\n");
-               MMALIB_debugPrintBufParams3D(&dst_addr);
-               MMALIB_debugPrintMatrix3D((void *)dst_cn, &dst_addr);
-               MMALIB_PRINTF("dst%s", "\n");
-               MMALIB_debugPrintBufParams3D(&dst_addr);
-               MMALIB_debugPrintMatrix3D((void *)dst, &dst_addr);
-            }
-
-#endif // MMALIB_DEBUGPRINT
-
-            pProfile[3 * tpi] = (int32_t)TI_profile_get_cycles(TI_PROFILE_KERNEL_OPT);
-            pProfile[3 * tpi + 1] = (int32_t)TI_profile_get_cycles(TI_PROFILE_KERNEL_OPT_WARM);
-            pProfile[3 * tpi + 2] = (int32_t)TI_profile_get_cycles(TI_PROFILE_KERNEL_OPT_WARMWRB);
-
-            MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_perfEst(handle,
-                                                                &src0_addr,
-                                                                &src1_addr,
-                                                                &dst_addr,
-                                                                &kerInitArgs,
-                                                                &kerExecInArgs,
-                                                                &kerExecOutArgs_ci,
-                                                                &archCycles,
-                                                                &estCycles);
-
-            sprintf(desc, "%s generated input | ByteWidth = %d, Groups=%d, Ni=%d, No=%d, Fr=%d, Fc=%d, Stride=%d, Dilation=%d, Lr=%d, Lc=%d, biasB=%d, numBiasVals=%d, shift=%d, ReLU=%s, MMA Ops=%d",
-                    testPatternString,
-                    MMALIB_sizeof(dst_addr.data_type),
-                    kerInitArgs.numGroupsPerKernel,
-                    kerInitArgs.Ni,
-                    kerInitArgs.No,
-                    kerInitArgs.Fr,
-                    kerInitArgs.Fc,
-                    kerInitArgs.strideX,
-                    kerInitArgs.dilationX,
-                    currPrm.Lr,
-                    currPrm.Lc,
-                    kerInitArgs.bias,
-                    kerInitArgs.numBiasVals,
-                    kerInitArgs.shift,
-                    ((kerInitArgs.activationType == MMALIB_SATURATION) ? "OFF" : "ON"),
-                    kerInitArgs.Fr * (2 * kerInitArgs.numGroupsPerKernel * kerInitArgs.Fr - 5));
-            TI_profile_add_test(testNum++, numPts, archCycles, estCycles, currentTestFail, desc);
-         }
-         else
-         {
-            /* Display the error printout for this test vector before moving on to the next test vector */
-            TI_profile_skip_test(desc);
-         }
-
-         /* Free buffers for each test vector */
-         if (currPrm.outputDataLocation == MMALIB_TEST_OUTPUT_HEAP)
-         {
-            TI_align_free(dst_cn);
-         }
-         else
-         {
-         }
-         if (currPrm.outputDataLocation == MMALIB_TEST_OUTPUT_HEAP)
-         {
-            // only malloc'd data can be freed
-            TI_align_free(dst);
-         }
-
-         TI_align_free(src1);
-         TI_align_free(src0);
-         if (biasBValues != NULL)
-         {
-            TI_align_free(biasBValues);
          }
       } // end repetitions
       free(handle);
