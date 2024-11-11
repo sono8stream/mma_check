@@ -204,39 +204,9 @@ int MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t Le
       void *src1 = TI_memalign(MMALIB_ALIGN_128BYTES, inp1Size);
       void *pSrc1 = src1;
 
-      uint8_t *shiftValues;
-      if (currPrm.staticShiftValues != NULL)
-      {
-         shiftValues = (uint8_t *)TI_memalign(MMALIB_ALIGN_128BYTES, kerInitArgs.numGroupsPerKernel);
-         int32_t i;
-         for (i = 0; i < kerInitArgs.numGroupsPerKernel; i++)
-         {
-            shiftValues[i] = currPrm.staticShiftValues[i];
-         }
-
-         // this is a cheap hack until the driver file supports per group shift
-         // this is to allow the dynamic range comparison logic to work
-         currPrm.qShift = shiftValues[0];
-      }
-      else
-      {
-         shiftValues = NULL;
-      }
+      uint8_t *shiftValues = NULL;
 
       int32_t *biasBValues = NULL;
-      if (currPrm.staticBiasBValues != NULL)
-      {
-         biasBValues = (int32_t *)TI_memalign(MMALIB_ALIGN_128BYTES, kerInitArgs.numGroupsPerKernel * sizeof(int32_t));
-         int32_t i;
-         for (i = 0; i < kerInitArgs.numGroupsPerKernel; i++)
-         {
-            biasBValues[i] = currPrm.staticBiasBValues[i];
-         }
-      }
-      else
-      {
-         biasBValues = NULL;
-      }
 
       void *dst;
 
