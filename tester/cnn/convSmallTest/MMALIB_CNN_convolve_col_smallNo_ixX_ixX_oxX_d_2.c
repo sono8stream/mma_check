@@ -39,85 +39,6 @@ __attribute__((section(".ddrData"), aligned(64))) int8_t ddrBuffer[2048 * 1024];
 
 int16_t volatile volatileSum = 0; // use volatile to keep compiler from removing this operation, move to global to prevent compiler warning of unused variable
 
-// function for creating filter coefficients with random values for randomly sized test cases
-void MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_generateRandomKernels(void **pKernels,
-                                                                       const MMALIB_bufParams2D_t *pKernels_addr,
-                                                                       const MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_InitArgs *pKerInitArgs)
-{
-   int32_t no, c, grp;
-   int32_t Ni = pKerInitArgs->Ni;
-   int32_t No = pKerInitArgs->No;
-   int32_t Fr = pKerInitArgs->Fr;
-   int32_t Fc = pKerInitArgs->Fc;
-   int32_t numGroupsPerKernel = pKerInitArgs->numGroupsPerKernel;
-   int32_t numBiasVals = pKerInitArgs->numBiasVals;
-   int32_t elementSize = MMALIB_sizeof(pKernels_addr->data_type);
-
-   // make a set of random kernels stored in the normal order, including bias
-   int32_t kernelRowElements = Ni * Fr * Fc + numBiasVals;
-   *pKernels = TI_memalign(MMALIB_ALIGN_128BYTES, numGroupsPerKernel * No * pKernels_addr->stride_y);
-
-   void *kernels = *pKernels;
-   if (elementSize == 1)
-   {
-      int8_t *ptr = (int8_t *)kernels;
-      for (grp = 0; grp < numGroupsPerKernel; grp++)
-      {
-         for (no = 0; no < No; no++)
-         {
-            for (c = 0; c < kernelRowElements; c++)
-            {
-               ptr[c] = rand();
-            }
-            ptr += pKernels_addr->stride_y;
-         }
-      }
-   }
-   else if (elementSize == 2)
-   {
-      int16_t *ptr = (int16_t *)kernels;
-      for (grp = 0; grp < numGroupsPerKernel; grp++)
-      {
-         for (no = 0; no < No; no++)
-         {
-            for (c = 0; c < kernelRowElements; c++)
-            {
-               ptr[c] = (rand() << 1) | (rand() & 0x00000001);
-            }
-            ptr += pKernels_addr->stride_y / elementSize;
-         }
-      }
-   }
-
-#if MMALIB_DEBUGPRINT
-   MMALIB_PRINTF("Natural order kernels:%s", "\n");
-   if (elementSize == 1)
-   {
-      int8_t *debugPtr = (int8_t *)kernels;
-      for (no = 0; no < No; no++)
-      {
-         for (c = 0; c < kernelRowElements; c++)
-         {
-            MMALIB_PRINTF("%d, ", debugPtr[no * kernelRowElements + c]);
-         }
-         MMALIB_PRINTF("%s", "\n");
-      }
-   }
-   else if (elementSize == 2)
-   {
-      int16_t *debugPtr = (int16_t *)kernels;
-      for (no = 0; no < No; no++)
-      {
-         for (c = 0; c < kernelRowElements; c++)
-         {
-            MMALIB_PRINTF("%d, ", debugPtr[no * kernelRowElements + c]);
-         }
-         MMALIB_PRINTF("%s", "\n");
-      }
-   }
-#endif
-}
-
 int MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t LevelOfFeedback)
 {
    int32_t tpi; /* test parameter index */
@@ -290,64 +211,17 @@ int MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t Le
          reorderWeightsArgs.dilationX = kerInitArgs.dilationX;
          reorderWeightsArgs.featureWidth = kerInitArgs.featureWidth;
          reorderWeightsArgs.numBiasVals = kerInitArgs.numBiasVals;
-#if FORCE_EVEN_GROUPS == FALSE
          reorderWeightsArgs.numGroupsPerKernel = kerInitArgs.numGroupsPerKernel;
-#else
-         if (currPrm.numGroupsPerKernel == 1)
-         {
-            // we don't need an even number of groups when there is 1 group
-            reorderWeightsArgs.numGroupsPerKernel = kerInitArgs.numGroupsPerKernel;
-         }
-         else
-         {
-            // "hack" to make sure we allocate memory for an even number of groups
-            if (currPrm.numGroupsPerKernel > 1)
-            {
-               reorderWeightsArgs.numGroupsPerKernel = MMALIB_ceilingDiv(currPrm.numGroupsPerKernel, 2) << 1;
-            }
-            else
-            {
-               reorderWeightsArgs.numGroupsPerKernel = currPrm.numGroupsPerKernel;
-            }
-         }
-#endif
 
          // calculate the memory size for allocation
          inp0Size = MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_reorderWeights_getMemorySize(&reorderWeightsArgs);
          // fill the bufParams for src0
          MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_reorderWeights_fillBufParams(&reorderWeightsArgs, &src0_addr);
 
-#if MMALIB_DEBUGPRINT
-         MMALIB_PRINTF("weights_addr: %s", "\n");
-         MMALIB_debugPrintBufParams(&weights_addr);
-
-         if (pBias_addr != NULL)
-         {
-            MMALIB_PRINTF("bias_addr: %s", "\n");
-            MMALIB_debugPrintBufParams(&bias_addr);
-         }
-
-         MMALIB_PRINTF("src0_addr: %s", "\n");
-         MMALIB_debugPrintBufParams(&src0_addr);
-#endif
-
          // currently assuming the feature map as 2D
          src1_addr.dim_x = kerInitArgs.Ni * currPrm.Lc; // input feature map
          int32_t LrWithGapRows = currPrm.Lr + gapRowsBetweenGroups;
          src1_addr.dim_y = LrWithGapRows * kerInitArgs.numGroupsPerKernel;
-#if FORCE_EVEN_GROUPS == FALSE
-         src1_addr.dim_y = LrWithGapRows * kerInitArgs.numGroupsPerKernel;
-#else
-         if (currPrm.numGroupsPerKernel == 1)
-         {
-            src1_addr.dim_y = LrWithGapRows * kerInitArgs.numGroupsPerKernel;
-         }
-         else
-         {
-            // make sure the numGroupsPerKernel is even,
-            src1_addr.dim_y = LrWithGapRows * 2 * MMALIB_ceilingDiv(kerInitArgs.numGroupsPerKernel, 2);
-         }
-#endif
          src1_addr.data_type = dataTypeB;
          src1_addr.stride_y = kerInitArgs.blockFeaturePitch;
          // make sure the numGroupsPerKernel is even, but for loading source data we need the actual data size.
@@ -436,25 +310,6 @@ int MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t Le
             ((uint8_t *)src1)[i] = 6;
          }
 
-#if MMALIB_DEBUGPRINT
-         // uint32_t i;
-         for (i = 0; i < outSize; i++)
-         {
-            ((uint8_t *)dst)[i] = 7;
-         }
-
-#if 0         
-         MMALIB_PRINTF("dst before computation%s", "\n");
-         for(i = 0; i < outSize; i++){
-            if ((i+1) % 64 > 0) {
-               MMALIB_PRINTF("%4u ", ((uint8_t *)dst)[i]);
-            } else {
-               MMALIB_PRINTF("%4u\n", ((uint8_t *)dst)[i]);
-            }
-         }
-#endif
-#endif
-
          void *dst_cn = NULL;
          if (currPrm.outputDataLocation == MMALIB_TEST_OUTPUT_HEAP)
          {
@@ -465,21 +320,6 @@ int MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t Le
             dst_cn = (void *)ddrBuffer;
          }
 
-#if MMALIB_DEBUGPRINT
-         MMALIB_PRINTF("src0_addr: %s", "\n");
-         MMALIB_debugPrintBufParams(&src0_addr);
-
-         MMALIB_PRINTF("src1_addr: %s", "\n");
-         MMALIB_debugPrintBufParams(&src1_addr);
-
-         MMALIB_PRINTF("dst_addr: %s", "\n");
-         MMALIB_debugPrintBufParams3D(&dst_addr);
-
-         MMALIB_PRINTF("inp0Size: %d, inp1Size: %d, outSize: %d, totalSize(KB): %d\n", inp0Size, inp1Size, outSize, (inp0Size + inp1Size + 2 * outSize) / 1024);
-         MMALIB_PRINTF("MMALIB_DEBUGPRINT test_case 0x%d  src1: 0x%p  pSrc1: %p  src0 %p dst 0x%p\n", tpi, src1, pSrc1, src0, dst);
-         MMALIB_PRINTF("MMALIB_DEBUGPRINT dst_cn = 0x%p\n", dst_cn);
-#endif
-
          /* Only run the test if the buffer allocations fit in the heap */
          if (src0 && src1 && dst && dst_cn)
          {
@@ -487,21 +327,8 @@ int MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t Le
             // copy/generate the filter coefficients
             reorderWeightsArgs.blockFeatureHeight = kerInitArgs.blockFeatureHeight;
 
-#if MMALIB_DEBUGPRINT
-            MMALIB_PRINTF("Static Weights%s", "\n");
-            MMALIB_debugPrintBufParams(&weights_addr);
-            MMALIB_debugPrintMatrix(currPrm.staticKernel, &weights_addr);
-#endif
             if (tpi % 2 == 0)
-            { // test various use cases for reorderWeights
-               // �������ŌW�����^�񒆂���1�ɂȂ�悤�ɂ���
-               // int unk = 0;
-               // for (unk = 0; unk < (int)currPrm.kernelWidth * (int)currPrm.kernelHeight; unk++)
-               // {
-               //    ((char *)currPrm.staticKernel)[unk] = 0;
-               // }
-               // ((char *)currPrm.staticKernel)[0] = 1;
-
+            {
                MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_reorderWeights_exec(REORDER_WEIGHTS_AND_BIAS, &reorderWeightsArgs, &weights_addr, currPrm.staticKernel, pBias_addr, currPrm.staticBias, &src0_addr, src0);
             }
             else
@@ -510,12 +337,6 @@ int MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t Le
                MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_reorderWeights_exec(REORDER_BIAS, &reorderWeightsArgs, &weights_addr, currPrm.staticKernel, pBias_addr, currPrm.staticBias, &src0_addr, src0);
             }
             MMALIB_DEBUGPRINTFN(1, "currPrm.staticBias = %p\n", currPrm.staticBias);
-
-#if MMALIB_DEBUGPRINT
-            MMALIB_PRINTF("Reordered kernel coefficients%s", "\n");
-            MMALIB_debugPrintBufParams(&src0_addr);
-            MMALIB_debugPrintMatrix(src0, &src0_addr);
-#endif
 
             // copy/generate the input feature maps
             TI_fillBuffer(currPrm.testPattern,
