@@ -52,7 +52,6 @@ int MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t Le
 
    /* Test Parameters */
    MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_testParams_t *prm;
-   MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_testParams_t currPrm;
    MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_getTestParams(&prm, &test_cases);
 
    MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_InitArgs kerInitArgs;
@@ -66,9 +65,6 @@ int MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t Le
    /* Run each test case */
    for (tpi = 0; tpi < test_cases; tpi++)
    {
-      /* Number of repetitions for the test */
-      currPrm = prm[tpi];
-
       int32_t handleSize = MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_getHandleSize(&kerInitArgs);
       MMALIB_kernelHandle handle = (MMALIB_kernelHandle)malloc(handleSize);
 
@@ -80,8 +76,8 @@ int MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t Le
       // assumed to represent a number of extra rows in the memory storage of the input feature map
       int32_t gapRowsBetweenGroups = 0;
 
-      int32_t lc = 64;
-      int32_t lr = 1024;
+      int32_t lc = 8192;
+      int32_t lr = 8;
       int32_t strideX = 1;
       int32_t strideY = 1;
       int32_t kernelWidth = 3;
@@ -129,8 +125,9 @@ int MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t Le
 
       /* Compute data sizes */
       MMALIB_bufParams2D_t *pBias_addr;
-      if (currPrm.staticBias == NULL)
+      if (TRUE)
       {
+         // バイアスが無い場合
          // bias is merged with weights
          // kernel filter weights
          weights_addr.dim_x = kerInitArgs.Ni * kerInitArgs.Fc * kerInitArgs.Fr + kerInitArgs.numBiasVals;
@@ -175,14 +172,14 @@ int MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t Le
       MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_reorderWeights_fillBufParams(&reorderWeightsArgs, &src0_addr);
 
       // currently assuming the feature map as 2D
-      src1_addr.dim_x = kerInitArgs.Ni * currPrm.Lc; // input feature map
-      int32_t LrWithGapRows = currPrm.Lr + gapRowsBetweenGroups;
+      src1_addr.dim_x = kerInitArgs.Ni * lc; // input feature map
+      int32_t LrWithGapRows = lr + gapRowsBetweenGroups;
       src1_addr.dim_y = LrWithGapRows * kerInitArgs.numGroupsPerKernel;
       src1_addr.data_type = dataTypeB;
       src1_addr.stride_y = kerInitArgs.blockFeaturePitch;
       // make sure the numGroupsPerKernel is even, but for loading source data we need the actual data size.
       src1_lddr = src1_addr;
-      src1_lddr.dim_y = currPrm.Lr * kerInitArgs.numGroupsPerKernel;
+      src1_lddr.dim_y = lr * kerInitArgs.numGroupsPerKernel;
 
       dst_addr.dim_x = Mc;
       dst_addr.dim_y = kerInitArgs.No * Mr;
@@ -236,7 +233,7 @@ int MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t Le
          {
             kernel[i] = i;
          }
-         MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_reorderWeights_exec(REORDER_WEIGHTS_AND_BIAS, &reorderWeightsArgs, &weights_addr, kernel, pBias_addr, currPrm.staticBias, &src0_addr, src0);
+         MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_reorderWeights_exec(REORDER_WEIGHTS_AND_BIAS, &reorderWeightsArgs, &weights_addr, kernel, pBias_addr, NULL, &src0_addr, src0);
 
          /**********************************************************************************************************
           *
