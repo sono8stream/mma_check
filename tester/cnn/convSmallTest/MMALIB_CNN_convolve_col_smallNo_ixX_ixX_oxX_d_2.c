@@ -98,10 +98,10 @@ int MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t Le
       int32_t eFc = kerInitArgs.dilationX * (kernelWidth - 1) + 1;  // equivalent filter width for dilation
       int32_t eFr = kerInitArgs.dilationY * (kernelHeight - 1) + 1; // equivalent filter height for dilation
       uint8_t dataTypeA = MMALIB_INT8;
-      uint8_t dataTypeB = MMALIB_INT8;
-      uint8_t dataTypeC = MMALIB_INT8;
-      kerInitArgs.activationType = MMALIB_SATURATION;
-      kerInitArgs.shift = 4;
+      uint8_t dataTypeB = MMALIB_UINT8;
+      uint8_t dataTypeC = MMALIB_UINT8;
+      kerInitArgs.activationType = MMALIB_RELU;
+      kerInitArgs.shift = 0;
       kerInitArgs.shiftMethod = MMALIB_CONVOLVE_COL_SHIFT_SINGLE;
       kerInitArgs.bias = 1;
       kerInitArgs.biasDataType = dataTypeB;
@@ -199,12 +199,11 @@ int MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t Le
       /* Allocate buffers for each test vector */
       // this works-around Valgrind warnings for predicated SA-based loads.  This should eventually be fixed in compiler/HE models.
       inp0Size = MMALIB_CALC_STRIDE(inp0Size + 64, MMALIB_ALIGN_SHIFT_64BYTES);
-      void *src0 = TI_memalign(MMALIB_ALIGN_128BYTES, inp0Size); // weights
+      void *src0 = 0x64820000;
 
       inp1Size = src1_addr.dim_y * src1_addr.stride_y;
       inp1Size = MMALIB_ceilingDiv(inp1Size, 64) * 64;
-      void *src1 = TI_memalign(MMALIB_ALIGN_128BYTES, inp1Size);
-      void *pSrc1 = src1;
+      void *pSrc1 = 0x64830000;
 
       uint8_t *shiftValues = NULL;
 
@@ -218,13 +217,14 @@ int MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t Le
       {
          ((uint8_t *)src0)[i] = 5;
       }
+
       for (i = 0; i < inp1Size; i++)
       {
-         ((uint8_t *)src1)[i] = 6;
+         ((uint8_t *)pSrc1)[i] = i % 10;
       }
 
       /* Only run the test if the buffer allocations fit in the heap */
-      if (src0 && src1 && dst)
+      if (src0 && dst)
       {
          /* copy static test data into memory, or generate random test data */
          // copy/generate the filter coefficients
@@ -236,16 +236,7 @@ int MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t Le
          {
             kernel[i] = i;
          }
-         MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_reorderWeights_exec(REORDER_WEIGHTS_AND_BIAS, &reorderWeightsArgs, &weights_addr, currPrm.staticKernel, pBias_addr, currPrm.staticBias, &src0_addr, src0);
-
-         MMALIB_DEBUGPRINTFN(1, "currPrm.staticBias = %p\n", currPrm.staticBias);
-
-         // copy/generate the input feature maps
-         TI_fillBuffer(currPrm.testPattern,
-                       (uint8_t)255,
-                       pSrc1, currPrm.staticIn,
-                       src1_lddr.dim_x, src1_lddr.dim_y, src1_lddr.stride_y,
-                       MMALIB_sizeof(src1_lddr.data_type), testPatternString);
+         MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_reorderWeights_exec(REORDER_WEIGHTS_AND_BIAS, &reorderWeightsArgs, &weights_addr, kernel, pBias_addr, currPrm.staticBias, &src0_addr, src0);
 
          /**********************************************************************************************************
           *
