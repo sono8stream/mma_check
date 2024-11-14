@@ -221,6 +221,8 @@ int MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t Le
       }
 
       /* Only run the test if the buffer allocations fit in the heap */
+
+      long long clocks[10];
       if (src0 && dst)
       {
          /* copy static test data into memory, or generate random test data */
@@ -245,29 +247,27 @@ int MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_d(uint32_t *pProfile, uint8_t Le
          MMALIB_asm(" MARK 0");
          kerInitArgs.funcStyle = MMALIB_FUNCTION_OPTIMIZED;
          //               MMALIB_DEBUGPRINT_STACK_PTR;
+         clocks[0] = __TSC;
          currTestStatus = MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_init(handle,
                                                                            &src0_addr,
                                                                            &src1_addr,
                                                                            &dst_addr,
                                                                            &kerInitArgs);
 
+         clocks[1] = __TSC;
          MMALIB_DEBUGPRINTFN(1, "currTestStatus = %d\n", currTestStatus);
 
          MMALIB_asm(" MARK 1");
          TI_profile_stop();
          if (currTestStatus == MMALIB_SUCCESS)
          {
-            /* Test optimized kernel */
-            MMALIB_DEBUGPRINTFN(1, "Starting optimized-C computation.  currTestStatus=%d.\n", currTestStatus);
             kerExecInArgs.blockFeatureWidth = src1_addr.dim_x;
-            TI_profile_start(TI_PROFILE_KERNEL_OPT);
-            MMALIB_asm(" MARK 2");
+            clocks[2] = __TSC;
             //               MMALIB_DEBUGPRINT_STACK_PTR;
             currTestStatus = MMALIB_CNN_convolve_col_smallNo_ixX_ixX_oxX_exec(handle, src0, pSrc1, shiftValues, biasBValues, dst,
                                                                               &kerExecInArgs,
                                                                               &kerExecOutArgs_ci);
-            MMALIB_asm(" MARK 3");
-            TI_profile_stop();
+            clocks[3] = __TSC;
          }
       }
       free(handle);
